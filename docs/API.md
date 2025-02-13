@@ -1,5 +1,11 @@
 # API Documentation
 
+## Base URL
+
+```
+http://localhost:3001/api
+```
+
 ## Endpoints
 
 ### Get Latest Block
@@ -7,7 +13,7 @@
 Retrieves the most recent block from the Cardano blockchain.
 
 ```
-GET /api/block/latest
+GET /block/latest
 ```
 
 #### Response
@@ -35,7 +41,116 @@ GET /api/block/latest
 }
 ```
 
-#### Error Response
+### Get Block Details
+
+Retrieves detailed information about a specific block.
+
+```
+GET /block/:hash
+```
+
+#### Parameters
+
+- `hash`: The block hash (64 characters)
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "hash": "string",
+    "height": number,
+    "slot": number,
+    "epoch": number,
+    "epoch_slot": number,
+    "slot_leader": "string",
+    "size": number,
+    "time": number,
+    "tx_count": number,
+    "output": "string",
+    "fees": "string",
+    "block_vrf": "string",
+    "previous_block": "string",
+    "next_block": "string",
+    "confirmations": number
+  }
+}
+```
+
+### Get Block Transactions
+
+Retrieves transactions for a specific block.
+
+```
+GET /block/:hash/transactions
+```
+
+#### Parameters
+
+- `hash`: The block hash (64 characters)
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "transactions": [
+      {
+        "hash": "string",
+        "block_time": number,
+        "inputs": number,
+        "outputs": number,
+        "input_amount": "string",
+        "output_amount": "string",
+        "fees": "string"
+      }
+    ]
+  }
+}
+```
+
+### Get Block List
+
+Retrieves a paginated list of blocks.
+
+```
+GET /blocks
+```
+
+#### Query Parameters
+
+- `page`: Page number (default: 1)
+- `limit`: Items per page (default: 10)
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "blocks": [
+      {
+        "hash": "string",
+        "height": number,
+        "time": number
+      }
+    ],
+    "pagination": {
+      "currentPage": number,
+      "totalPages": number,
+      "hasNext": boolean,
+      "hasPrevious": boolean,
+      "totalBlocks": number
+    }
+  }
+}
+```
+
+## Error Responses
+
+### Standard Error Format
 
 ```json
 {
@@ -45,39 +160,7 @@ GET /api/block/latest
 }
 ```
 
-### Rate Limiting
-
-- Window: 15 minutes
-- Max Requests: 100 per IP
-- Response when limit exceeded:
-
-```json
-{
-  "error": "Too many requests, please try again later."
-}
-```
-
-## Security
-
-### Headers
-
-The API uses Helmet middleware to set the following security headers:
-
-- Content-Security-Policy
-- X-Frame-Options
-- X-XSS-Protection
-- X-Content-Type-Options
-- Referrer-Policy
-
-### CORS
-
-Cross-Origin Resource Sharing is enabled with the following configuration:
-
-- Allowed origins: All (in development)
-- Methods: GET
-- Headers: Content-Type, Accept
-
-### Error Codes
+### Status Codes
 
 | Code | Description           |
 | ---- | --------------------- |
@@ -89,12 +172,41 @@ Cross-Origin Resource Sharing is enabled with the following configuration:
 | 500  | Internal Server Error |
 | 502  | Bad Gateway           |
 
-## Frontend Integration
+## Rate Limiting
 
-### Example Usage
+- Window: 15 minutes
+- Max Requests: 100 per IP
+- Response when limit exceeded:
+
+```json
+{
+  "error": "Too many requests, please try again later."
+}
+```
+
+## Security Headers
+
+All endpoints are protected with the following security headers:
+
+- Content-Security-Policy
+- X-Frame-Options
+- X-XSS-Protection
+- X-Content-Type-Options
+- Referrer-Policy
+
+## CORS
+
+Cross-Origin Resource Sharing is configured with:
+
+- Allowed origins: All (in development)
+- Methods: GET
+- Headers: Content-Type, Accept
+
+## Example Usage
+
+### JavaScript Fetch
 
 ```javascript
-// Fetch latest block
 async function getLatestBlock() {
   try {
     const response = await fetch('http://localhost:3001/api/block/latest');
@@ -110,36 +222,18 @@ async function getLatestBlock() {
 }
 ```
 
-## Development
-
-### Environment Variables
-
-Required environment variables:
-
-```env
-BLOCKFROST_API_KEY=your_api_key_here
-NODE_ENV=development
-```
-
-### Local Development
-
-1. Start the server:
-
-```bash
-npm run dev
-```
-
-2. The API will be available at:
-
-```
-http://localhost:3001
-```
-
-## Testing
-
-To test the API endpoints:
+### cURL
 
 ```bash
 # Get latest block
-curl http://localhost:3001/api/block/latest | json_pp
+curl http://localhost:3001/api/block/latest
+
+# Get specific block
+curl http://localhost:3001/api/block/{block_hash}
+
+# Get block transactions
+curl http://localhost:3001/api/block/{block_hash}/transactions
+
+# Get block list
+curl http://localhost:3001/api/blocks?page=1&limit=10
 ```

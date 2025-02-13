@@ -1,125 +1,149 @@
-# Architecture Overview
+# Architecture Documentation
 
 ## System Architecture
 
 ### Frontend Architecture
 
-The frontend is built using vanilla JavaScript with a modular architecture:
+The frontend implements a modular vanilla JavaScript architecture with clear separation of concerns:
 
 1. **Main Module** (`main.js`)
-
-   - Entry point of the application
-   - Handles initialization and event binding
-   - Manages auto-refresh functionality
-   - Coordinates between UI and API modules
+   - Application entry point and initialization
+   - Event handling coordination
+   - Auto-refresh management (20-second intervals)
+   - State management for current block selection
+   - Coordination between UI and API modules
 
 2. **API Module** (`api.js`)
-
-   - Handles all API communications
-   - Encapsulates fetch logic
-   - Provides clean interface for data retrieval
-   - Handles API-specific error cases
+   - Centralized API communication layer
+   - Endpoints:
+     - `/api/block/latest` - Latest block retrieval
+     - `/api/block/:hash` - Block details by hash
+     - `/api/block/:hash/transactions` - Block transactions
+     - `/api/blocks` - Paginated block list
+     - `/api/tx/:hash` - Transaction details
 
 3. **UI Module** (`ui.js`)
-   - Manages DOM updates
-   - Handles data presentation
-   - Manages loading states
-   - Handles error display
+   - DOM manipulation and updates
+   - Component rendering:
+     - Block list display
+     - Block details view
+     - Transaction list
+     - Loading states
+     - Error handling
+   - Utility functions for data formatting
+   - Event listener management
 
 ### Backend Architecture
 
 1. **Server Layer** (`server.js`)
-
-   - Express.js server setup
+   - Express.js server configuration
    - Route definitions
-   - Middleware configuration
-   - Static file serving
+   - Middleware setup:
+     - CORS
+     - Rate limiting
+     - Security headers (Helmet)
+     - Static file serving
 
-2. **Middleware Layer** (`middleware/`)
-
+2. **Middleware Layer**
    - Error handling (`errorHandler.js`)
-   - Async operation handling (`asyncHandler.js`)
-   - Request validation
-   - Security middleware (rate limiting, CORS, etc.)
+   - Async operation wrapper (`asyncHandler.js`)
+   - API configuration validation
+   - Request logging
 
-3. **Utils Layer** (`utils/`)
-   - Custom error classes
-   - Helper functions
-   - Shared utilities
+3. **Utils Layer**
+   - Custom error class (`APIError.js`)
+   - Response formatting
+   - Data transformation utilities
+
+## Security Features
+
+1. **API Security**
+   - Rate limiting: 100 requests per 15 minutes
+   - Secure headers via Helmet
+   - CORS configuration
+   - API key validation
+   - Error sanitization in production
+
+2. **Data Validation**
+   - Input validation for block hashes
+   - Response data validation
+   - Error boundaries
+   - Type checking
+
+3. **Error Handling**
+   - Custom error class implementation
+   - Production/Development error responses
+   - Centralized error logging
+   - Graceful degradation
 
 ## Data Flow
 
-1. Client Request Flow:
-
+1. **Client Request Flow**
 ```
-User Action → main.js → api.js → Backend API → Blockfrost API
+User Action → main.js → api.js → Express Server → Blockfrost API
                                       ↓
 User Interface ← ui.js ← main.js ← Response
 ```
 
-2. Error Handling Flow:
-
+2. **Error Flow**
 ```
-Error Occurrence → APIError → ErrorHandler Middleware → Client
-                     ↓
-               Error Logging
+Error → APIError → ErrorHandler → Client
+         ↓
+    Error Logging
 ```
 
-## Security Architecture
+## Performance Considerations
 
-1. **API Security**
+1. **Frontend**
+   - Efficient DOM updates
+   - Debounced event handlers
+   - Optimized rendering cycles
+   - Resource cleanup
 
-   - Rate limiting per IP
-   - API key validation
-   - CORS protection
-   - HTTP security headers
-
-2. **Error Handling**
-
-   - Custom error classes
-   - Centralized error handling
-   - Production/Development error responses
-   - Error logging
-
-3. **Data Validation**
-   - Input validation
-   - Response validation
-   - Type checking
-   - Error boundaries
+2. **Backend**
+   - Request caching
+   - Rate limiting
+   - Efficient error handling
+   - Response optimization
 
 ## Dependencies
 
-### Core Dependencies
-
-- express: Web server framework
-- cors: Cross-origin resource sharing
-- helmet: Security headers
-- express-rate-limit: Rate limiting
-- node-fetch: HTTP client
-- dotenv: Environment configuration
+### Production Dependencies
+```json
+{
+  "cors": "^2.8.5",
+  "dotenv": "^16.4.7",
+  "express": "^4.21.2",
+  "express-rate-limit": "^7.4.1",
+  "helmet": "^8.0.0",
+  "node-fetch": "^3.3.2"
+}
+```
 
 ### Development Dependencies
-
-- nodemon: Development server
-- eslint: Code linting
-- prettier: Code formatting
+```json
+{
+  "nodemon": "^3.0.1"
+}
+```
 
 ## Future Considerations
 
 1. **Scalability**
-
-   - Caching layer for frequent requests
-   - Load balancing
+   - Implementation of caching layer
+   - Load balancing strategy
    - Database integration for historical data
+   - WebSocket implementation for real-time updates
 
 2. **Monitoring**
-
-   - Error tracking
+   - Error tracking implementation
    - Performance monitoring
    - Usage analytics
+   - Health checks
 
 3. **Feature Expansion**
-   - Transaction details
-   - Address tracking
-   - Asset information
-   - Stake pool data
+   - Advanced transaction details
+   - Address tracking functionality
+   - Asset information display
+   - Stake pool data integration
+   - Search functionality enhancement
