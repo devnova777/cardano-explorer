@@ -107,25 +107,14 @@ app.get(
   })
 );
 
-// Add this endpoint to server.js after the existing '/api/block/latest' route
-
+// Update the blocks endpoint
 app.get(
   '/api/blocks',
   asyncHandler(async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
-    const currentPage = parseInt(page);
-    const blockLimit = parseInt(limit);
 
-    // Input validation
-    if (isNaN(currentPage) || currentPage < 1) {
-      throw new APIError('Invalid page number', 400);
-    }
-    if (isNaN(blockLimit) || blockLimit < 1 || blockLimit > 50) {
-      throw new APIError('Invalid limit value', 400);
-    }
-
-    // Get the latest block first to determine the starting point
-    const latestBlockResponse = await fetch(
+    // Get blocks list from Blockfrost
+    const blocksResponse = await fetch(
       'https://cardano-mainnet.blockfrost.io/api/v0/blocks/latest',
       {
         headers: {
@@ -135,49 +124,41 @@ app.get(
       }
     );
 
-    if (!latestBlockResponse.ok) {
+    if (!blocksResponse.ok) {
       throw new APIError(
-        `Blockfrost API error: ${latestBlockResponse.statusText}`,
-        latestBlockResponse.status
+        `Blockfrost API error: ${blocksResponse.statusText}`,
+        blocksResponse.status
       );
     }
 
-    const latestBlock = await latestBlockResponse.json();
+    const latestBlock = await blocksResponse.json();
 
-    // Calculate the block height range for the requested page
-    const startHeight = latestBlock.height - (currentPage - 1) * blockLimit;
-
-    // Fetch blocks in parallel
-    const blockPromises = Array.from({ length: blockLimit }, (_, index) => {
-      const height = startHeight - index;
-      // Don't fetch if we've gone below height 0
-      if (height <= 0) return null;
-
-      return fetch(
-        `https://cardano-mainnet.blockfrost.io/api/v0/blocks/height/${height}`,
-        {
-          headers: {
-            project_id: process.env.BLOCKFROST_API_KEY,
-            'Content-Type': 'application/json',
-          },
-        }
-      ).then(async (response) => {
-        if (!response.ok) {
-          throw new APIError(
-            `Blockfrost API error: ${response.statusText}`,
-            response.status
-          );
-        }
-        return response.json();
-      });
-    });
-
-    const blocks = (await Promise.all(blockPromises)).filter(
-      (block) => block !== null
+    // Get previous blocks
+    const blockHashesResponse = await fetch(
+      `https://cardano-mainnet.blockfrost.io/api/v0/blocks/${latestBlock.hash}/previous?count=${limit}`,
+      {
+        headers: {
+          project_id: process.env.BLOCKFROST_API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
     );
 
+    if (!blockHashesResponse.ok) {
+      throw new APIError(
+        `Failed to fetch block hashes`,
+        blockHashesResponse.status
+      );
+    }
+
+    const blockHashes = await blockHashesResponse.json();
+
+    // Get detailed information for each block
+    const blocks = [latestBlock, ...blockHashes];
+
     // Calculate pagination info
-    const totalPages = Math.ceil(latestBlock.height / blockLimit);
+    const totalPages = Math.ceil(latestBlock.height / limit);
+    const currentPage = parseInt(page);
 
     res.json({
       success: true,
@@ -191,6 +172,42 @@ app.get(
           totalBlocks: latestBlock.height,
         },
       },
+    });
+  })
+);
+
+// Add this endpoint to get block details
+app.get(
+  '/api/block/:hash',
+  asyncHandler(async (req, res) => {
+    const { hash } = req.params;
+
+    if (!hash || hash.length !== 64) {
+      throw new APIError('Invalid block hash', 400);
+    }
+
+    const response = await fetch(
+      `https://cardano-mainnet.blockfrost.io/api/v0/blocks/${hash}`,
+      {
+        headers: {
+          project_id: process.env.BLOCKFROST_API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new APIError(
+        `Blockfrost API error: ${response.statusText}`,
+        response.status
+      );
+    }
+
+    const blockData = await response.json();
+
+    res.json({
+      success: true,
+      data: blockData,
     });
   })
 );

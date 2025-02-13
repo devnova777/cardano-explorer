@@ -1,7 +1,13 @@
-import { getLatestBlock, getBlockTransactions } from './api.js';
 import {
-  displayBlock,
+  getLatestBlock,
+  getBlocks,
+  getBlockDetails,
+  getBlockTransactions,
+} from './api.js';
+import {
   displayLatestBlock,
+  displayBlockList,
+  displayBlock,
   displayTransactions,
   displayError,
   displayLoading,
@@ -73,10 +79,36 @@ function stopAutoRefresh() {
   }
 }
 
+// Add new functions for block list handling
+window.loadBlockList = async function loadBlockList(page = 1) {
+  try {
+    console.log('Loading block list page:', page); // Debug log
+    displayLoading('block-list');
+    const response = await getBlocks(page);
+    console.log('Block list response:', response); // Debug log
+    displayBlockList(response);
+  } catch (error) {
+    console.error('Error loading block list:', error);
+    displayError('Failed to load block list', 'block-list');
+  }
+};
+
+window.loadBlockDetails = async function loadBlockDetails(blockHash) {
+  try {
+    displayLoading('block-content');
+    currentBlockHash = blockHash;
+    const response = await getBlockDetails(blockHash);
+    displayBlock(response);
+  } catch (error) {
+    displayError('Failed to load block details', 'block-content');
+    console.error('Error:', error);
+  }
+};
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
-  // Initial load
-  await window.fetchLatestBlock();
+  // Initial load of latest block and block list
+  await Promise.all([window.fetchLatestBlock(), window.loadBlockList()]);
   startAutoRefresh();
 
   // Set up event listeners

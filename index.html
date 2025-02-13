@@ -10,23 +10,32 @@
 
 <body>
     <div class="container">
-        <h1>Cardano Block Explorer</h1>
+        <div class="header">
+            <h1>Cardano Explorer</h1>
+            <div class="search-bar">
+                <input type="text" placeholder="Search block, transaction, wallet or NFT">
+                <button>Search</button>
+            </div>
+        </div>
 
         <div class="explorer-grid">
-            <!-- Left column - Latest block info -->
-            <div class="latest-block-container">
-                <div class="latest-block-header">
+            <!-- Left column -->
+            <div class="left-column">
+                <!-- Latest block info -->
+                <div class="section">
                     <h2>Latest Block</h2>
-                    <div class="button-group">
-                        <button id="fetch-block">Refresh Now</button>
-                        <button id="auto-refresh">Stop Auto-Refresh</button>
-                    </div>
+                    <div id="latest-block-info" class="card"></div>
                 </div>
-                <div id="latest-block-info" class="card"></div>
+
+                <!-- Block list -->
+                <div class="section">
+                    <h2>Block List</h2>
+                    <div id="block-list" class="card"></div>
+                </div>
             </div>
 
-            <!-- Right column - Block content area -->
-            <div class="block-content-container">
+            <!-- Right column - Block/Transaction content area -->
+            <div class="right-column">
                 <div id="block-content" class="card"></div>
             </div>
         </div>

@@ -35,7 +35,7 @@ export function displayLatestBlock(response) {
     createInfoRow('Fees', `${formatAda(block.fees)} ₳`),
   ].join('');
 
-  getElement(LATEST_BLOCK_TARGET).innerHTML = createCardTemplate(content);
+  getElement('latest-block-info').innerHTML = createCardTemplate(content);
 }
 
 // Display block content in the right panel
@@ -165,4 +165,78 @@ export function displayError(message, target = CONTENT_TARGET) {
 
 export function displayLoading(target = CONTENT_TARGET) {
   getElement(target).innerHTML = createCardTemplate('<p>Loading...</p>');
+}
+
+export function displayBlockList(response) {
+  if (!response.data || !response.data.blocks) {
+    getElement('block-list').innerHTML = createCardTemplate(
+      '<p>No blocks available.</p>'
+    );
+    return;
+  }
+
+  const { blocks, pagination } = response.data;
+
+  const blockListItems = blocks
+    .map(
+      (block) => `
+    <div class="block-list-item" data-block-hash="${block.hash}">
+      <div class="block-list-main">
+        <span class="block-height">#${block.height.toLocaleString()}</span>
+        <span class="block-hash">${block.hash}</span>
+      </div>
+      <div class="block-list-details">
+        <span class="block-time">${formatDate(block.time)}</span>
+        <span class="block-tx-count">${block.tx_count} txs</span>
+        <button class="view-block-btn">View</button>
+      </div>
+    </div>
+  `
+    )
+    .join('');
+
+  const paginationControls = pagination
+    ? `
+    <div class="pagination">
+      ${
+        pagination.hasPrevious
+          ? `<button class="page-btn" data-page="${
+              pagination.currentPage - 1
+            }">Previous</button>`
+          : ''
+      }
+      <span>Page ${pagination.currentPage} of ${pagination.totalPages}</span>
+      ${
+        pagination.hasNext
+          ? `<button class="page-btn" data-page="${
+              pagination.currentPage + 1
+            }">Next</button>`
+          : ''
+      }
+    </div>
+  `
+    : '';
+
+  getElement('block-list').innerHTML = `
+    <div class="block-list-container">
+      ${blockListItems}
+      ${paginationControls}
+    </div>
+  `;
+
+  // Add event listeners for block list items
+  document.querySelectorAll('.view-block-btn').forEach((button) => {
+    button.addEventListener('click', (e) => {
+      const blockHash = e.target.closest('.block-list-item').dataset.blockHash;
+      window.loadBlockDetails(blockHash);
+    });
+  });
+
+  // Add event listeners for pagination
+  document.querySelectorAll('.page-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      const page = parseInt(button.dataset.page);
+      window.loadBlockList(page);
+    });
+  });
 }
