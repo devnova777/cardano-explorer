@@ -57,3 +57,65 @@ button:disabled {
   font-family: monospace;
   font-size: 0.9rem;
 }
+
+/* New styles for transaction view */
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.transaction-item {
+  padding: 1rem;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.transaction-item:hover {
+  background-color: #f5f5f5;
+}
+
+.tx-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.page-btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+button.secondary {
+  background: #f5f5f5;
+  color: #333;
+}
+
+button.secondary:hover {
+  background: #e5e5e5;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}
