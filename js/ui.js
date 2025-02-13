@@ -4,71 +4,174 @@ const LATEST_BLOCK_TARGET = 'latest-block-info';
 const CONTENT_TARGET = 'block-content';
 
 // Helper functions
-const formatAda = (lovelace) => {
+function getElement(id) {
+  const element = document.getElementById(id);
+  if (!element) throw new Error(`Element with id '${id}' not found`);
+  return element;
+}
+
+function createCardTemplate(content) {
+  return `<div class="card-content">${content}</div>`;
+}
+
+function formatDate(timestamp) {
+  return new Date(timestamp * 1000).toLocaleString();
+}
+
+function formatAda(lovelace) {
   const value = parseInt(lovelace) || 0;
   return (value / LOVELACE_TO_ADA).toFixed(6);
-};
-const getElement = (id) => document.getElementById(id);
-const formatDate = (timestamp) => new Date(timestamp * 1000).toLocaleString();
+}
 
-// Template generators
-const createCardTemplate = (content) => `
-  <div class="card-content">
-    ${content}
-  </div>
-`;
-
-const createInfoRow = (label, value, className = 'value') => `
-  <p><strong>${label}:</strong> <span class="${className}">${value}</span></p>
-`;
-
-// Display the latest block in the left panel
-export function displayLatestBlock(response) {
+// Display functions
+function displayLatestBlock(response) {
   const block = response.data;
-  const content = [
-    createInfoRow('Block Height', block.height.toLocaleString()),
-    createInfoRow('Block Hash', block.hash, 'hash'),
-    createInfoRow('Time', formatDate(block.time)),
-    createInfoRow('Transactions', block.tx_count.toLocaleString()),
-    createInfoRow('Size', `${block.size.toLocaleString()} bytes`),
-    createInfoRow('Epoch', block.epoch),
-    createInfoRow('Fees', `${formatAda(block.fees)} ₳`),
-  ].join('');
+  const content = `
+    <div class="latest-block-info">
+      <div class="info-row">
+        <strong>Block Height</strong>
+        <span class="value">${block.height.toLocaleString()}</span>
+      </div>
+      <div class="info-row">
+        <strong>Block Hash</strong>
+        <span class="hash">${block.hash}</span>
+      </div>
+      <div class="info-row">
+        <strong>Time</strong>
+        <span class="value">${formatDate(block.time)}</span>
+      </div>
+      <div class="info-row">
+        <strong>Transactions</strong>
+        <span class="value">${block.tx_count}</span>
+      </div>
+      <div class="info-row">
+        <strong>Size</strong>
+        <span class="value">${block.size.toLocaleString()} bytes</span>
+      </div>
+      <div class="info-row">
+        <strong>Epoch</strong>
+        <span class="value">${block.epoch}</span>
+      </div>
+      <div class="info-row">
+        <strong>Fees</strong>
+        <span class="value">${formatAda(block.fees)} ₳</span>
+      </div>
+    </div>
+  `;
 
   getElement('latest-block-info').innerHTML = createCardTemplate(content);
 }
 
-// Display block content in the right panel
-export function displayBlock(response) {
+function displayBlockList(response) {
+  if (!response.data || !response.data.blocks) {
+    getElement('block-list').innerHTML = createCardTemplate(
+      '<p>No blocks available.</p>'
+    );
+    return;
+  }
+
+  const { blocks } = response.data;
+
+  const blockListItems = blocks
+    .map(
+      (block) => `
+    <div class="block-list-item">
+      <div class="block-info">
+        <div class="block-height">#${block.height.toLocaleString()}</div>
+        <div class="block-hash">${block.hash}</div>
+      </div>
+      <div class="block-actions">
+        <button class="view-block-btn" data-block-hash="${block.hash}">
+          <img src="/images/Explore.svg" alt="View Block Details">
+        </button>
+      </div>
+    </div>
+  `
+    )
+    .join('');
+
+  getElement('block-list').innerHTML = `
+    <div class="block-list-container">
+      ${blockListItems}
+    </div>
+  `;
+
+  // Add event listeners for block list items
+  document.querySelectorAll('.view-block-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      const blockHash = button.dataset.blockHash;
+      window.loadBlockDetails(blockHash);
+    });
+  });
+}
+
+function displayBlock(response) {
   const block = response.data;
-  const content = [
-    createInfoRow('Block Height', block.height.toLocaleString()),
-    createInfoRow('Block Hash', block.hash, 'hash'),
-    createInfoRow('Slot', block.slot.toLocaleString()),
-    createInfoRow('Time', formatDate(block.time)),
-    createInfoRow('Transactions', block.tx_count.toLocaleString()),
-    createInfoRow('Size', `${block.size.toLocaleString()} bytes`),
-    createInfoRow('Epoch', block.epoch),
-    createInfoRow('Fees', `${formatAda(block.fees)} ₳`),
-    block.tx_count > 0
-      ? '<button id="view-transactions" class="mt-4">View Transactions</button>'
-      : '',
-  ].join('');
+  const content = `
+    <div class="block-details">
+      <div class="header-section">
+        <h2>Block Details</h2>
+        <button id="back-to-list" class="secondary-btn">Back to List</button>
+      </div>
+      <div class="info-row">
+        <strong>Block Height</strong>
+        <span class="value">${block.height.toLocaleString()}</span>
+      </div>
+      <div class="info-row">
+        <strong>Block Hash</strong>
+        <span class="hash">${block.hash}</span>
+      </div>
+      <div class="info-row">
+        <strong>Slot</strong>
+        <span class="value">${block.slot.toLocaleString()}</span>
+      </div>
+      <div class="info-row">
+        <strong>Time</strong>
+        <span class="value">${formatDate(block.time)}</span>
+      </div>
+      <div class="info-row">
+        <strong>Transactions</strong>
+        <span class="value">${block.tx_count}</span>
+      </div>
+      <div class="info-row">
+        <strong>Size</strong>
+        <span class="value">${block.size.toLocaleString()} bytes</span>
+      </div>
+      <div class="info-row">
+        <strong>Epoch</strong>
+        <span class="value">${block.epoch}</span>
+      </div>
+      <div class="info-row">
+        <strong>Fees</strong>
+        <span class="value">${formatAda(block.fees)} ₳</span>
+      </div>
+      ${
+        block.tx_count > 0
+          ? `<button id="view-transactions" class="primary-btn">View Transactions</button>`
+          : ''
+      }
+    </div>
+  `;
 
-  getElement(CONTENT_TARGET).innerHTML = createCardTemplate(content);
+  getElement('block-content').innerHTML = createCardTemplate(content);
 
-  // Add event listener for view transactions button
+  // Add event listeners
+  const backButton = getElement('back-to-list');
+  if (backButton) {
+    backButton.addEventListener('click', () => {
+      window.loadBlockList();
+    });
+  }
+
   const viewTxButton = getElement('view-transactions');
   if (viewTxButton) {
     viewTxButton.addEventListener('click', () => {
-      console.log('Loading transactions for block:', block.hash); // Debug log
       window.loadBlockTransactions(block.hash);
     });
   }
 }
 
-// Display transactions in the right panel
-export function displayTransactions(response) {
+function displayTransactions(response) {
   const { transactions } = response.data;
 
   if (!transactions || transactions.length === 0) {
@@ -154,89 +257,51 @@ function renderPagination({ page, limit, total }) {
   `;
 }
 
-// Utility display functions
-export function displayError(message, target = CONTENT_TARGET) {
-  getElement(target).innerHTML = `
-    <div class="error">
-      <strong>Error:</strong> ${message}
+function displayError(message, targetId = 'block-content') {
+  getElement(targetId).innerHTML = `
+    <div class="error-message">
+      Error: ${message}
     </div>
   `;
 }
 
-export function displayLoading(target = CONTENT_TARGET) {
-  getElement(target).innerHTML = createCardTemplate('<p>Loading...</p>');
+function displayLoading(targetId = 'block-content') {
+  getElement(targetId).innerHTML = `
+    <div class="loading">
+      Loading...
+    </div>
+  `;
 }
 
-export function displayBlockList(response) {
-  if (!response.data || !response.data.blocks) {
-    getElement('block-list').innerHTML = createCardTemplate(
-      '<p>No blocks available.</p>'
-    );
-    return;
+// Update loadBlockDetails in main.js to clear the right panel first
+window.loadBlockDetails = async function loadBlockDetails(blockHash) {
+  try {
+    displayLoading('block-content');
+    currentBlockHash = blockHash;
+    const response = await getBlockDetails(blockHash);
+    displayBlock(response);
+  } catch (error) {
+    displayError('Failed to load block details', 'block-content');
+    console.error('Error:', error);
   }
+};
 
-  const { blocks, pagination } = response.data;
+// Clear the right panel content when returning to the main view
+window.clearBlockSelection = function clearBlockSelection() {
+  currentBlockHash = null;
+  getElement('block-content').innerHTML = ''; // Clear the right panel
+};
 
-  const blockListItems = blocks
-    .map(
-      (block) => `
-    <div class="block-list-item" data-block-hash="${block.hash}">
-      <div class="block-list-main">
-        <span class="block-height">#${block.height.toLocaleString()}</span>
-        <span class="block-hash">${block.hash}</span>
-      </div>
-      <div class="block-list-details">
-        <span class="block-time">${formatDate(block.time)}</span>
-        <span class="block-tx-count">${block.tx_count} txs</span>
-        <button class="view-block-btn">View</button>
-      </div>
-    </div>
-  `
-    )
-    .join('');
-
-  const paginationControls = pagination
-    ? `
-    <div class="pagination">
-      ${
-        pagination.hasPrevious
-          ? `<button class="page-btn" data-page="${
-              pagination.currentPage - 1
-            }">Previous</button>`
-          : ''
-      }
-      <span>Page ${pagination.currentPage} of ${pagination.totalPages}</span>
-      ${
-        pagination.hasNext
-          ? `<button class="page-btn" data-page="${
-              pagination.currentPage + 1
-            }">Next</button>`
-          : ''
-      }
-    </div>
-  `
-    : '';
-
-  getElement('block-list').innerHTML = `
-    <div class="block-list-container">
-      ${blockListItems}
-      ${paginationControls}
-    </div>
-  `;
-
-  // Add event listeners for block list items
-  document.querySelectorAll('.view-block-btn').forEach((button) => {
-    button.addEventListener('click', (e) => {
-      const blockHash = e.target.closest('.block-list-item').dataset.blockHash;
-      window.loadBlockDetails(blockHash);
-    });
-  });
-
-  // Add event listeners for pagination
-  document.querySelectorAll('.page-btn').forEach((button) => {
-    button.addEventListener('click', () => {
-      const page = parseInt(button.dataset.page);
-      window.loadBlockList(page);
-    });
-  });
-}
+// Export all functions
+export {
+  displayLatestBlock,
+  displayBlockList,
+  displayBlock,
+  displayTransactions,
+  displayError,
+  displayLoading,
+  getElement,
+  createCardTemplate,
+  formatDate,
+  formatAda,
+};

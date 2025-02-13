@@ -6,36 +6,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cardano Block Explorer</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="images/favicon.svg">
 </head>
 
 <body>
     <div class="container">
         <div class="header">
-            <h1>Cardano Explorer</h1>
+            <h1>
+                <img src="images/cardano-ada-logo.png" alt="Cardano Logo" class="logo">
+                Cardano Explorer
+                <img src="images/Explore.svg" alt="Explorer Icon" class="explorer-icon">
+            </h1>
             <div class="search-bar">
                 <input type="text" placeholder="Search block, transaction, wallet or NFT">
-                <button>Search</button>
+                <button class="search-btn">
+                    <img src="images/Explore.svg" alt="Search" class="search-icon">
+                    Search
+                </button>
             </div>
         </div>
 
         <div class="explorer-grid">
-            <!-- Left column -->
+            <!-- Left column - Latest block info -->
             <div class="left-column">
-                <!-- Latest block info -->
                 <div class="section">
                     <h2>Latest Block</h2>
                     <div id="latest-block-info" class="card"></div>
                 </div>
+            </div>
 
-                <!-- Block list -->
+            <!-- Right column - Block list and details -->
+            <div class="right-column">
                 <div class="section">
                     <h2>Block List</h2>
                     <div id="block-list" class="card"></div>
                 </div>
-            </div>
-
-            <!-- Right column - Block/Transaction content area -->
-            <div class="right-column">
                 <div id="block-content" class="card"></div>
             </div>
         </div>

@@ -11,6 +11,7 @@ import {
   displayTransactions,
   displayError,
   displayLoading,
+  getElement,
 } from './ui.js';
 
 let autoRefreshInterval;
@@ -107,24 +108,33 @@ window.loadBlockDetails = async function loadBlockDetails(blockHash) {
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async () => {
-  // Initial load of latest block and block list
-  await Promise.all([window.fetchLatestBlock(), window.loadBlockList()]);
-  startAutoRefresh();
+  try {
+    // Initial load of latest block and block list
+    await Promise.all([window.fetchLatestBlock(), window.loadBlockList()]);
 
-  // Set up event listeners
-  const fetchBlockBtn = document.getElementById('fetch-block');
-  if (fetchBlockBtn) {
-    fetchBlockBtn.addEventListener('click', window.fetchLatestBlock);
-  }
+    // Clear the right panel initially
+    getElement('block-content').innerHTML = '';
 
-  const autoRefreshBtn = document.getElementById('auto-refresh');
-  if (autoRefreshBtn) {
-    autoRefreshBtn.addEventListener('click', () => {
-      if (autoRefreshInterval) {
-        stopAutoRefresh();
-      } else {
-        startAutoRefresh();
-      }
-    });
+    startAutoRefresh();
+
+    // Set up event listeners
+    const fetchBlockBtn = document.getElementById('fetch-block');
+    if (fetchBlockBtn) {
+      fetchBlockBtn.addEventListener('click', window.fetchLatestBlock);
+    }
+
+    const autoRefreshBtn = document.getElementById('auto-refresh');
+    if (autoRefreshBtn) {
+      autoRefreshBtn.addEventListener('click', () => {
+        if (autoRefreshInterval) {
+          stopAutoRefresh();
+        } else {
+          startAutoRefresh();
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error during initialization:', error);
+    displayError('Failed to initialize the application');
   }
 });
