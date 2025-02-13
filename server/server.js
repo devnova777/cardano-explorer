@@ -86,16 +86,47 @@ app.get(
   '/api/block/:hash/transactions',
   asyncHandler(async (req, res) => {
     const { hash } = req.params;
-    const { page = 1, limit = 10 } = req.query;
 
-    // Validate block hash format
-    if (!/^[0-9a-fA-F]{64}$/.test(hash)) {
-      throw new APIError('Invalid block hash format', 400);
+    if (!hash || hash.length !== 64) {
+      throw new APIError('Invalid block hash', 400);
     }
 
-    // First get transaction hashes for this block
-    const txHashesResponse = await fetch(
-      `https://cardano-mainnet.blockfrost.io/api/v0/blocks/${hash}/txs?page=${page}&count=${limit}`,
+    const data = await getTransactionsForBlock(hash);
+
+    if (!data.transactions || data.transactions.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No transactions found for this block',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: data,
+    });
+  })
+);
+
+// Add this endpoint to server.js after the existing '/api/block/latest' route
+
+app.get(
+  '/api/blocks',
+  asyncHandler(async (req, res) => {
+    const { page = 1, limit = 10 } = req.query;
+    const currentPage = parseInt(page);
+    const blockLimit = parseInt(limit);
+
+    // Input validation
+    if (isNaN(currentPage) || currentPage < 1) {
+      throw new APIError('Invalid page number', 400);
+    }
+    if (isNaN(blockLimit) || blockLimit < 1 || blockLimit > 50) {
+      throw new APIError('Invalid limit value', 400);
+    }
+
+    // Get the latest block first to determine the starting point
+    const latestBlockResponse = await fetch(
+      'https://cardano-mainnet.blockfrost.io/api/v0/blocks/latest',
       {
         headers: {
           project_id: process.env.BLOCKFROST_API_KEY,
@@ -104,81 +135,60 @@ app.get(
       }
     );
 
-    if (!txHashesResponse.ok) {
+    if (!latestBlockResponse.ok) {
       throw new APIError(
-        `Blockfrost API error: ${txHashesResponse.statusText}`,
-        txHashesResponse.status
+        `Blockfrost API error: ${latestBlockResponse.statusText}`,
+        latestBlockResponse.status
       );
     }
 
-    const txHashes = await txHashesResponse.json();
+    const latestBlock = await latestBlockResponse.json();
 
-    // Get detailed information for each transaction
-    const transactionDetails = await Promise.all(
-      txHashes.map(async (txHash) => {
-        const [txResponse, utxoResponse] = await Promise.all([
-          // Get basic transaction info
-          fetch(`https://cardano-mainnet.blockfrost.io/api/v0/txs/${txHash}`, {
-            headers: {
-              project_id: process.env.BLOCKFROST_API_KEY,
-              'Content-Type': 'application/json',
-            },
-          }),
-          // Get UTXO information
-          fetch(
-            `https://cardano-mainnet.blockfrost.io/api/v0/txs/${txHash}/utxos`,
-            {
-              headers: {
-                project_id: process.env.BLOCKFROST_API_KEY,
-                'Content-Type': 'application/json',
-              },
-            }
-          ),
-        ]);
+    // Calculate the block height range for the requested page
+    const startHeight = latestBlock.height - (currentPage - 1) * blockLimit;
 
-        if (!txResponse.ok || !utxoResponse.ok) {
-          console.error(`Error fetching transaction ${txHash}`);
-          return null;
+    // Fetch blocks in parallel
+    const blockPromises = Array.from({ length: blockLimit }, (_, index) => {
+      const height = startHeight - index;
+      // Don't fetch if we've gone below height 0
+      if (height <= 0) return null;
+
+      return fetch(
+        `https://cardano-mainnet.blockfrost.io/api/v0/blocks/height/${height}`,
+        {
+          headers: {
+            project_id: process.env.BLOCKFROST_API_KEY,
+            'Content-Type': 'application/json',
+          },
         }
+      ).then(async (response) => {
+        if (!response.ok) {
+          throw new APIError(
+            `Blockfrost API error: ${response.statusText}`,
+            response.status
+          );
+        }
+        return response.json();
+      });
+    });
 
-        const [txData, utxoData] = await Promise.all([
-          txResponse.json(),
-          utxoResponse.json(),
-        ]);
-
-        return {
-          hash: txHash,
-          block_time: txData.block_time,
-          fees: txData.fees,
-          inputs: utxoData.inputs.length,
-          outputs: utxoData.outputs.length,
-          input_amount: utxoData.inputs.reduce(
-            (sum, input) =>
-              sum +
-              input.amount.reduce((a, b) => a + parseInt(b.quantity || 0), 0),
-            0
-          ),
-          output_amount: utxoData.outputs.reduce(
-            (sum, output) =>
-              sum +
-              output.amount.reduce((a, b) => a + parseInt(b.quantity || 0), 0),
-            0
-          ),
-        };
-      })
+    const blocks = (await Promise.all(blockPromises)).filter(
+      (block) => block !== null
     );
 
-    // Filter out any failed transaction fetches
-    const validTransactions = transactionDetails.filter((tx) => tx !== null);
+    // Calculate pagination info
+    const totalPages = Math.ceil(latestBlock.height / blockLimit);
 
     res.json({
       success: true,
       data: {
-        transactions: validTransactions,
+        blocks,
         pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: validTransactions.length,
+          currentPage,
+          totalPages,
+          hasNext: currentPage < totalPages,
+          hasPrevious: currentPage > 1,
+          totalBlocks: latestBlock.height,
         },
       },
     });
@@ -191,3 +201,93 @@ app.use(errorHandler);
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
+
+async function getTransactionsForBlock(hash) {
+  try {
+    // 1. Get block-specific information first
+    const blockResponse = await fetch(
+      `https://cardano-mainnet.blockfrost.io/api/v0/blocks/${hash}`,
+      {
+        headers: {
+          project_id: process.env.BLOCKFROST_API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!blockResponse.ok) {
+      throw new APIError(`Failed to fetch block ${hash}`, blockResponse.status);
+    }
+
+    const blockData = await blockResponse.json();
+
+    // 2. Get transaction hashes for the block
+    const txHashesResponse = await fetch(
+      `https://cardano-mainnet.blockfrost.io/api/v0/blocks/${hash}/txs?order=desc`,
+      {
+        headers: {
+          project_id: process.env.BLOCKFROST_API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!txHashesResponse.ok) {
+      throw new APIError(
+        `Failed to fetch transactions for block ${hash}`,
+        txHashesResponse.status
+      );
+    }
+
+    const txHashes = await txHashesResponse.json();
+
+    // 3. Get detailed information for each transaction
+    const transactions = await Promise.all(
+      txHashes.map(async (txHash) => {
+        // Get transaction details including UTXOs
+        const [txData, utxoData] = await Promise.all([
+          fetch(`https://cardano-mainnet.blockfrost.io/api/v0/txs/${txHash}`, {
+            headers: {
+              project_id: process.env.BLOCKFROST_API_KEY,
+              'Content-Type': 'application/json',
+            },
+          }).then((res) => res.json()),
+          fetch(
+            `https://cardano-mainnet.blockfrost.io/api/v0/txs/${txHash}/utxos`,
+            {
+              headers: {
+                project_id: process.env.BLOCKFROST_API_KEY,
+                'Content-Type': 'application/json',
+              },
+            }
+          ).then((res) => res.json()),
+        ]);
+
+        return {
+          hash: txHash,
+          block_time: blockData.time, // Use block time for consistency
+          inputs: utxoData.inputs.length,
+          outputs: utxoData.outputs.length,
+          input_amount: utxoData.inputs
+            .reduce((sum, input) => {
+              const lovelace = input.amount.find((a) => a.unit === 'lovelace');
+              return sum + (lovelace ? BigInt(lovelace.quantity) : BigInt(0));
+            }, BigInt(0))
+            .toString(),
+          output_amount: utxoData.outputs
+            .reduce((sum, output) => {
+              const lovelace = output.amount.find((a) => a.unit === 'lovelace');
+              return sum + (lovelace ? BigInt(lovelace.quantity) : BigInt(0));
+            }, BigInt(0))
+            .toString(),
+          fees: txData.fees,
+        };
+      })
+    );
+
+    return { transactions };
+  } catch (error) {
+    console.error('Error fetching transaction data:', error);
+    throw error;
+  }
+}

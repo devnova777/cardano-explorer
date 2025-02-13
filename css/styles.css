@@ -1,42 +1,77 @@
+/* Base styles */
+:root {
+  --primary-color: #0070f3;
+  --primary-hover: #0051b3;
+  --error-bg: #fee;
+  --error-color: #c00;
+  --border-color: #eee;
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --border-radius: 8px;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+}
+
+/* Layout */
 .container {
-  max-width: 800px;
-  margin: 2rem auto;
-  padding: 0 1rem;
+  max-width: 1200px;
+  margin: var(--spacing-xl) auto;
+  padding: 0 var(--spacing-md);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
     Ubuntu, Cantarell, sans-serif;
 }
 
+.explorer-grid {
+  display: grid;
+  grid-template-columns: 40% 60%;
+  gap: var(--spacing-xl);
+  margin-top: var(--spacing-xl);
+}
+
+/* Card styles */
 .card {
   background: white;
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-top: 1rem;
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow);
+  margin-bottom: var(--spacing-md);
 }
 
 .card p {
-  margin: 0.5rem 0;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 0.5rem;
+  margin: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: var(--spacing-sm);
 }
 
 .card p:last-child {
   border-bottom: none;
 }
 
-.error {
-  background: #fee;
-  color: #c00;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-top: 1rem;
+/* Latest block styles */
+.latest-block-container {
+  position: sticky;
+  top: var(--spacing-xl);
 }
 
+.latest-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.button-group {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+/* Button styles */
 button {
-  background: #0070f3;
+  background: var(--primary-color);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem var(--spacing-lg);
   border-radius: 4px;
   cursor: pointer;
   font-size: 1rem;
@@ -44,67 +79,12 @@ button {
 }
 
 button:hover {
-  background: #0051b3;
+  background: var(--primary-hover);
 }
 
 button:disabled {
   background: #ccc;
   cursor: not-allowed;
-}
-
-.hash {
-  word-break: break-all;
-  font-family: monospace;
-  font-size: 0.9rem;
-}
-
-/* New styles for transaction view */
-.header-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.transaction-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.transaction-item {
-  padding: 1rem;
-  border: 1px solid #eee;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.transaction-item:hover {
-  background-color: #f5f5f5;
-}
-
-.tx-details {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
-  color: #666;
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #eee;
-}
-
-.page-btn {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
 }
 
 button.secondary {
@@ -116,6 +96,186 @@ button.secondary:hover {
   background: #e5e5e5;
 }
 
+.page-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.9rem;
+}
+
+/* Transaction styles */
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.transaction-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.transaction-item {
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+.transaction-item:hover {
+  background-color: #f5f5f5;
+}
+
+.tx-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-sm);
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Block list styles */
+.block-list-item {
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  margin-bottom: var(--spacing-sm);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.block-list-item:hover {
+  background-color: #f5f5f5;
+}
+
+.block-list-item .time {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.block-list-item .tx-count {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+/* Utility classes */
+.hash {
+  word-break: break-all;
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+.error {
+  background: var(--error-bg);
+  color: var(--error-color);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  margin-top: var(--spacing-md);
+}
+
 .mt-4 {
+  margin-top: var(--spacing-md);
+}
+
+/* Headings */
+h1 {
+  margin-bottom: var(--spacing-xl);
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+/* Card content wrapper */
+.card-content {
+  height: 100%;
+}
+
+.transactions-container {
+  padding: 1rem;
+}
+
+.transactions-list {
   margin-top: 1rem;
+}
+
+.transaction-item {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.transaction-item:hover {
+  background-color: #f5f5f5;
+}
+
+.tx-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.tx-hash {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.tx-time {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.tx-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.5rem;
+}
+
+.tx-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tx-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.tx-value {
+  font-family: monospace;
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.header-section h3 {
+  margin: 0;
 }

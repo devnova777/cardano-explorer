@@ -6,18 +6,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cardano Block Explorer</title>
     <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Cardano Block Explorer</h1>
+
+        <div class="explorer-grid">
+            <!-- Left column - Latest block info -->
+            <div class="latest-block-container">
+                <div class="latest-block-header">
+                    <h2>Latest Block</h2>
+                    <div class="button-group">
+                        <button id="fetch-block">Refresh Now</button>
+                        <button id="auto-refresh">Stop Auto-Refresh</button>
+                    </div>
+                </div>
+                <div id="latest-block-info" class="card"></div>
+            </div>
+
+            <!-- Right column - Block content area -->
+            <div class="block-content-container">
+                <div id="block-content" class="card"></div>
+            </div>
+        </div>
+    </div>
     <script type="module" src="js/api.js"></script>
     <script type="module" src="js/ui.js"></script>
     <script type="module" src="js/main.js"></script>
-</head>
-
-<div class="container">
-    <h1>Cardano Block Explorer</h1>
-    <div class="button-group">
-        <button id="fetch-block">Refresh Now</button>
-        <button id="auto-refresh">Stop Auto-Refresh</button>
-    </div>
-    <div id="block-info"></div>
-</div>
+</body>
 
 </html>

@@ -1,82 +1,135 @@
-// ui.js
+// Constants for common values and elements
+const LOVELACE_TO_ADA = 1000000;
+const LATEST_BLOCK_TARGET = 'latest-block-info';
+const CONTENT_TARGET = 'block-content';
+
+// Helper functions
+const formatAda = (lovelace) => {
+  const value = parseInt(lovelace) || 0;
+  return (value / LOVELACE_TO_ADA).toFixed(6);
+};
+const getElement = (id) => document.getElementById(id);
+const formatDate = (timestamp) => new Date(timestamp * 1000).toLocaleString();
+
+// Template generators
+const createCardTemplate = (content) => `
+  <div class="card-content">
+    ${content}
+  </div>
+`;
+
+const createInfoRow = (label, value, className = 'value') => `
+  <p><strong>${label}:</strong> <span class="${className}">${value}</span></p>
+`;
+
+// Display the latest block in the left panel
+export function displayLatestBlock(response) {
+  const block = response.data;
+  const content = [
+    createInfoRow('Block Height', block.height.toLocaleString()),
+    createInfoRow('Block Hash', block.hash, 'hash'),
+    createInfoRow('Time', formatDate(block.time)),
+    createInfoRow('Transactions', block.tx_count.toLocaleString()),
+    createInfoRow('Size', `${block.size.toLocaleString()} bytes`),
+    createInfoRow('Epoch', block.epoch),
+    createInfoRow('Fees', `${formatAda(block.fees)} ₳`),
+  ].join('');
+
+  getElement(LATEST_BLOCK_TARGET).innerHTML = createCardTemplate(content);
+}
+
+// Display block content in the right panel
 export function displayBlock(response) {
   const block = response.data;
+  const content = [
+    createInfoRow('Block Height', block.height.toLocaleString()),
+    createInfoRow('Block Hash', block.hash, 'hash'),
+    createInfoRow('Slot', block.slot.toLocaleString()),
+    createInfoRow('Time', formatDate(block.time)),
+    createInfoRow('Transactions', block.tx_count.toLocaleString()),
+    createInfoRow('Size', `${block.size.toLocaleString()} bytes`),
+    createInfoRow('Epoch', block.epoch),
+    createInfoRow('Fees', `${formatAda(block.fees)} ₳`),
+    block.tx_count > 0
+      ? '<button id="view-transactions" class="mt-4">View Transactions</button>'
+      : '',
+  ].join('');
 
-  document.getElementById('block-info').innerHTML = `
-    <div class="card">
-      <p><strong>Block Height:</strong> <span class="value">${block.height.toLocaleString()}</span></p>
-      <p><strong>Block Hash:</strong> <span class="hash">${
-        block.hash
-      }</span></p>
-      <p><strong>Slot:</strong> <span class="value">${block.slot.toLocaleString()}</span></p>
-      <p><strong>Time:</strong> <span class="value">${new Date(
-        block.time * 1000
-      ).toLocaleString()}</span></p>
-      <p><strong>Transactions:</strong> <span class="value">${block.tx_count.toLocaleString()}</span></p>
-      <p><strong>Size:</strong> <span class="value">${block.size.toLocaleString()} bytes</span></p>
-      <p><strong>Epoch:</strong> <span class="value">${block.epoch}</span></p>
-      <p><strong>Fees:</strong> <span class="value">${(
-        parseInt(block.fees) / 1000000
-      ).toFixed(6)} ₳</span></p>
-      ${
-        block.tx_count > 0
-          ? '<button id="view-transactions" class="mt-4">View Transactions</button>'
-          : ''
-      }
-    </div>
-  `;
+  getElement(CONTENT_TARGET).innerHTML = createCardTemplate(content);
 
   // Add event listener for view transactions button
-  const viewTxButton = document.getElementById('view-transactions');
+  const viewTxButton = getElement('view-transactions');
   if (viewTxButton) {
     viewTxButton.addEventListener('click', () => {
+      console.log('Loading transactions for block:', block.hash); // Debug log
       window.loadBlockTransactions(block.hash);
     });
   }
 }
-// Update the displayTransactions function in ui.js
 
+// Display transactions in the right panel
 export function displayTransactions(response) {
-  const { transactions, pagination } = response.data;
+  const { transactions } = response.data;
 
-  document.getElementById('block-info').innerHTML = `
-    <div class="card">
+  if (!transactions || transactions.length === 0) {
+    getElement(CONTENT_TARGET).innerHTML = createCardTemplate(
+      '<p>No transactions found for this block.</p>'
+    );
+    return;
+  }
+
+  const transactionTemplate = (tx) => `
+    <div class="transaction-item" data-tx-hash="${tx.hash}">
+      <div class="tx-header">
+        <span class="tx-hash">${tx.hash}</span>
+        <span class="tx-time">${formatDate(tx.block_time)}</span>
+      </div>
+      <div class="tx-details">
+        <div class="tx-row">
+          <span class="tx-label">Inputs/Outputs:</span>
+          <span class="tx-value">${tx.inputs || 0} / ${tx.outputs || 0}</span>
+        </div>
+        <div class="tx-row">
+          <span class="tx-label">Amount:</span>
+          <span class="tx-value">${formatAda(tx.output_amount || 0)} ₳</span>
+        </div>
+        <div class="tx-row">
+          <span class="tx-label">Fees:</span>
+          <span class="tx-value">${formatAda(tx.fees || 0)} ₳</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const content = `
+    <div class="transactions-container">
       <div class="header-section">
         <h3>Block Transactions</h3>
         <button id="back-to-block" class="secondary">Back to Block</button>
       </div>
-      <div class="transaction-list">
-        ${transactions
-          .map(
-            (tx) => `
-          <div class="transaction-item">
-            <p class="hash">Hash: ${tx.hash}</p>
-            <div class="tx-details">
-              <span>Time: ${new Date(
-                tx.block_time * 1000
-              ).toLocaleString()}</span>
-              <span>Inputs: ${tx.inputs}</span>
-              <span>Outputs: ${tx.outputs}</span>
-              <span>Input Amount: ${(tx.input_amount / 1000000).toFixed(
-                6
-              )} ₳</span>
-              <span>Output Amount: ${(tx.output_amount / 1000000).toFixed(
-                6
-              )} ₳</span>
-              <span>Fees: ${(parseInt(tx.fees) / 1000000).toFixed(6)} ₳</span>
-            </div>
-          </div>
-        `
-          )
-          .join('')}
+      <div class="transactions-list">
+        ${transactions.map(transactionTemplate).join('')}
       </div>
-      ${renderPagination(pagination)}
     </div>
   `;
 
-  // Add event listeners
-  document.getElementById('back-to-block').addEventListener('click', () => {
-    window.fetchLatestBlock();
+  getElement(CONTENT_TARGET).innerHTML = content;
+
+  // Add event listener for back button
+  const backButton = getElement('back-to-block');
+  if (backButton) {
+    backButton.addEventListener('click', () => {
+      window.clearBlockSelection();
+    });
+  }
+
+  // Add click listeners to transaction items
+  document.querySelectorAll('.transaction-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      const txHash = item.dataset.txHash;
+      console.log('Transaction clicked:', txHash);
+      // You can implement transaction details view here
+    });
   });
 }
 
@@ -101,18 +154,15 @@ function renderPagination({ page, limit, total }) {
   `;
 }
 
-export function displayError(message) {
-  document.getElementById('block-info').innerHTML = `
+// Utility display functions
+export function displayError(message, target = CONTENT_TARGET) {
+  getElement(target).innerHTML = `
     <div class="error">
       <strong>Error:</strong> ${message}
     </div>
   `;
 }
 
-export function displayLoading() {
-  document.getElementById('block-info').innerHTML = `
-    <div class="card">
-      <p>Loading...</p>
-    </div>
-  `;
+export function displayLoading(target = CONTENT_TARGET) {
+  getElement(target).innerHTML = createCardTemplate('<p>Loading...</p>');
 }
