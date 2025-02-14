@@ -32,8 +32,11 @@
       "dest": "/server/server.js"
     },
     {
-      "src": "/js/(.*)",
-      "dest": "/js/$1"
+      "src": "/js/(.*)\\.js$",
+      "headers": {
+        "Content-Type": "application/javascript"
+      },
+      "continue": true
     },
     {
       "src": "/css/(.*)",
