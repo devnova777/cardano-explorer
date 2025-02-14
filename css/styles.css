@@ -429,13 +429,23 @@ body {
 .navigation-bar {
   display: flex;
   align-items: center;
-  margin-bottom: 1.5rem;
-  gap: 2rem;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
 }
 
-/* Back button styles */
-/* Action button styles - unified button class */
-.action-btn {
+/* Navigation bar styles */
+.navigation-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+}
+
+/* Button base styles - ensure these are applied to both button elements and anchor tags */
+button.action-btn,
+a.action-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -450,37 +460,30 @@ body {
   background-color: var(--cardano-blue-light);
   border: 1px solid transparent;
   cursor: pointer;
+  font-family: inherit; /* Ensure font consistency */
+  font-size: 1rem; /* Explicit font size */
+  line-height: 1.4; /* Consistent line height */
+  margin: 0; /* Reset margin */
+  outline: none; /* Remove default outline */
 }
 
-.action-btn:hover {
+button.action-btn:hover,
+a.action-btn:hover {
   background-color: white;
   border-color: var(--cardano-blue);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.action-btn-text {
-  font-size: 1.1rem;
-  font-weight: 600;
-  transition: transform 0.2s ease;
-}
-
-.action-btn:hover .action-btn-text {
-  transform: translateX(-2px);
-}
-
-/* Only needed for buttons with icons */
-.action-btn-icon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-/* Button group styles */
-.button-group {
-  display: flex;
-  gap: 0.5rem;
-  margin-left: auto;
+/* Reset any default button styles */
+button {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
 }
 
 /* Detail type style (keeping this separate as it's not a button) */
