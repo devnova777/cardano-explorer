@@ -59,14 +59,14 @@ function displayLatestBlock(response) {
     </div>
   `;
 
-  getElement('latest-block-info').innerHTML = createCardTemplate(content);
+  getElement('latest-block-info').innerHTML = content;
 }
 
 function displayBlockList(response) {
+  const blockList = getElement('block-list');
+
   if (!response.data || !response.data.blocks) {
-    getElement('block-list').innerHTML = createCardTemplate(
-      '<p>No blocks available.</p>'
-    );
+    blockList.innerHTML = '<p>No blocks available.</p>';
     return;
   }
 
@@ -80,21 +80,15 @@ function displayBlockList(response) {
         <div class="block-height">#${block.height.toLocaleString()}</div>
         <div class="block-hash">${block.hash}</div>
       </div>
-      <div class="block-actions">
-        <button class="view-block-btn" data-block-hash="${block.hash}">
-          <img src="/images/Explore.svg" alt="View Block Details">
-        </button>
-      </div>
+      <button class="view-block-btn" data-block-hash="${block.hash}">
+        <img src="images/Explore.svg" alt="View Block Details">
+      </button>
     </div>
   `
     )
     .join('');
 
-  getElement('block-list').innerHTML = `
-    <div class="block-list-container">
-      ${blockListItems}
-    </div>
-  `;
+  blockList.innerHTML = blockListItems;
 
   // Add event listeners for block list items
   document.querySelectorAll('.view-block-btn').forEach((button) => {

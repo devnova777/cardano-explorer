@@ -94,16 +94,9 @@ window.loadBlockList = async function loadBlockList(page = 1) {
   }
 };
 
-window.loadBlockDetails = async function loadBlockDetails(blockHash) {
-  try {
-    displayLoading('block-content');
-    currentBlockHash = blockHash;
-    const response = await getBlockDetails(blockHash);
-    displayBlock(response);
-  } catch (error) {
-    displayError('Failed to load block details', 'block-content');
-    console.error('Error:', error);
-  }
+window.loadBlockDetails = function loadBlockDetails(blockHash) {
+  // Navigate to the details page with the block hash
+  window.location.href = `pages/details.html?hash=${blockHash}&type=block`;
 };
 
 // Initialize the application

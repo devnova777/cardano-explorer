@@ -11,11 +11,13 @@
 
 <body>
     <div class="container">
-        <div class="header">
+        <header class="header">
             <h1>
-                <img src="images/cardano-ada-logo.png" alt="Cardano Logo" class="logo">
-                Cardano Explorer
-                <img src="images/Explore.svg" alt="Explorer Icon" class="explorer-icon">
+                <div class="header-icons">
+                    <img src="images/cardano-ada-logo.png" alt="Cardano Logo" class="logo">
+                    <img src="images/Explore.svg" alt="Explorer Icon" class="explorer-icon">
+                </div>
+                <span class="header-title">Cardano Explorer</span>
             </h1>
             <div class="search-bar">
                 <input type="text" placeholder="Search block, transaction, wallet or NFT">
@@ -24,26 +26,36 @@
                     Search
                 </button>
             </div>
-        </div>
+        </header>
 
         <div class="explorer-grid">
             <!-- Left column - Latest block info -->
             <div class="left-column">
                 <div class="section">
                     <h2>Latest Block</h2>
-                    <div id="latest-block-info" class="card"></div>
+                    <div class="card">
+                        <div id="latest-block-info" class="scrollable-content"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Right column - Block list and details -->
+            <!-- Right column - Block list -->
             <div class="right-column">
                 <div class="section">
                     <h2>Block List</h2>
-                    <div id="block-list" class="card"></div>
+                    <div class="card">
+                        <div id="block-list" class="scrollable-content"></div>
+                    </div>
                 </div>
-                <div id="block-content" class="card"></div>
             </div>
         </div>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <span>© 2025 James Barclay</span>
+                <a href="#" target="_blank" rel="noopener noreferrer">GitHub</a>
+            </div>
+        </footer>
     </div>
     <script type="module" src="js/api.js"></script>
     <script type="module" src="js/ui.js"></script>
