@@ -443,36 +443,39 @@ body {
   padding: 0.5rem;
 }
 
-/* Button base styles - ensure these are applied to both button elements and anchor tags */
+/* Button styles with increased specificity */
 button.action-btn,
-a.action-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--cardano-blue);
-  text-decoration: none;
-  font-weight: 500;
-  padding: 0.75rem 1.25rem;
-  border-radius: var(--border-radius);
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  min-width: fit-content;
-  background-color: var(--cardano-blue-light);
-  border: 1px solid transparent;
-  cursor: pointer;
-  font-family: inherit; /* Ensure font consistency */
-  font-size: 1rem; /* Explicit font size */
-  line-height: 1.4; /* Consistent line height */
-  margin: 0; /* Reset margin */
-  outline: none; /* Remove default outline */
+button#fetch-block.action-btn,
+button#auto-refresh.action-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  color: var(--cardano-blue) !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+  padding: 0.75rem 1.25rem !important;
+  border-radius: var(--border-radius) !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+  min-width: fit-content !important;
+  background-color: var(--cardano-blue-light) !important;
+  border: 1px solid transparent !important;
+  cursor: pointer !important;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  line-height: 1.4 !important;
+  margin: 0 !important;
+  outline: none !important;
 }
 
+/* Hover state with increased specificity */
 button.action-btn:hover,
-a.action-btn:hover {
-  background-color: white;
-  border-color: var(--cardano-blue);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+button#fetch-block.action-btn:hover,
+button#auto-refresh.action-btn:hover {
+  background-color: white !important;
+  border-color: var(--cardano-blue) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* Reset any default button styles */

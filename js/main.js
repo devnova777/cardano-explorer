@@ -28,6 +28,19 @@ const ELEMENTS = {
 let autoRefreshInterval = null;
 let currentBlockHash = null;
 
+// Add this at the top of the file
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('CSS loaded:', document.styleSheets);
+  // This will help us verify if and how the stylesheets are loading
+  Array.from(document.styleSheets).forEach((sheet, index) => {
+    console.log(`Stylesheet ${index}:`, {
+      href: sheet.href,
+      rules: sheet.cssRules?.length || 'Not accessible (CORS)',
+      disabled: sheet.disabled,
+    });
+  });
+});
+
 /**
  * Fetches and displays the latest block
  */
