@@ -147,7 +147,7 @@ function displayBlock(response) {
     </div>
   `;
 
-  getElement('block-content').innerHTML = createCardTemplate(content);
+  getElement(CONTENT_TARGET).innerHTML = createCardTemplate(content);
 
   // Add event listeners
   const backButton = getElement('back-to-list');
@@ -251,7 +251,7 @@ function renderPagination({ page, limit, total }) {
   `;
 }
 
-function displayError(message, targetId = 'block-content') {
+function displayError(message, targetId = CONTENT_TARGET) {
   getElement(targetId).innerHTML = `
     <div class="error-message">
       Error: ${message}
@@ -259,7 +259,7 @@ function displayError(message, targetId = 'block-content') {
   `;
 }
 
-function displayLoading(targetId = 'block-content') {
+function displayLoading(targetId = CONTENT_TARGET) {
   getElement(targetId).innerHTML = `
     <div class="loading">
       Loading...
@@ -267,15 +267,15 @@ function displayLoading(targetId = 'block-content') {
   `;
 }
 
-// Update loadBlockDetails in main.js to clear the right panel first
+// Update loadBlockDetails to use the correct target
 window.loadBlockDetails = async function loadBlockDetails(blockHash) {
   try {
-    displayLoading('block-content');
+    displayLoading(CONTENT_TARGET);
     currentBlockHash = blockHash;
     const response = await getBlockDetails(blockHash);
     displayBlock(response);
   } catch (error) {
-    displayError('Failed to load block details', 'block-content');
+    displayError('Failed to load block details', CONTENT_TARGET);
     console.error('Error:', error);
   }
 };
@@ -283,7 +283,7 @@ window.loadBlockDetails = async function loadBlockDetails(blockHash) {
 // Clear the right panel content when returning to the main view
 window.clearBlockSelection = function clearBlockSelection() {
   currentBlockHash = null;
-  getElement('block-content').innerHTML = ''; // Clear the right panel
+  getElement(CONTENT_TARGET).innerHTML = ''; // Clear the right panel
 };
 
 // Export all functions

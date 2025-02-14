@@ -105,11 +105,21 @@
       ]
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "/server/server.js"
+      "src": "/api/blocks/latest",
+      "dest": "/server/server.js"
     },
+    {
+      "src": "/api/blocks",
+      "dest": "/server/server.js"
+    },
+    {
+      "src": "/api/blocks/(.*)",
+      "dest": "/server/server.js"
+    }
+  ],
+  "rewrites": [
     { "source": "/pages/:path*", "destination": "/pages/:path*" },
     { "source": "/:path*", "destination": "/:path*" }
   ]
