@@ -105,22 +105,26 @@
       ]
     }
   ],
-  "routes": [
-    {
-      "src": "/api/blocks/latest",
-      "dest": "/server/server.js"
-    },
-    {
-      "src": "/api/blocks",
-      "dest": "/server/server.js"
-    },
-    {
-      "src": "/api/blocks/(.*)",
-      "dest": "/server/server.js"
-    }
-  ],
   "rewrites": [
-    { "source": "/pages/:path*", "destination": "/pages/:path*" },
-    { "source": "/:path*", "destination": "/:path*" }
+    {
+      "source": "/api/blocks/latest",
+      "destination": "/server/server.js"
+    },
+    {
+      "source": "/api/blocks",
+      "destination": "/server/server.js"
+    },
+    {
+      "source": "/api/blocks/:hash",
+      "destination": "/server/server.js"
+    },
+    {
+      "source": "/pages/:path*",
+      "destination": "/pages/:path*"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/:path*"
+    }
   ]
 }
