@@ -4,6 +4,10 @@
   "trailingSlash": false,
   "builds": [
     {
+      "src": "server/**/*.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "api/**/*.js",
       "use": "@vercel/node"
     },
@@ -30,7 +34,10 @@
   "github": {
     "enabled": true,
     "silent": false,
-    "autoJobCancellation": true
+    "autoJobCancellation": true,
+    "deploymentEnabled": {
+      "main": true
+    }
   },
   "headers": [
     {
@@ -105,7 +112,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/api/:path*"
+      "destination": "/server/api/:path*"
     },
     { "source": "/pages/:path*", "destination": "/pages/:path*" },
     { "source": "/:path*", "destination": "/:path*" }

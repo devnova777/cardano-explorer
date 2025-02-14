@@ -2,7 +2,10 @@
 .env
 .env.*
 node_modules
-README.md
+docs
+*.md
 .gitignore
 .vercelignore
-*.log 
+*.log
+.vscode
+.idea 
