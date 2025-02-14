@@ -107,15 +107,7 @@
   ],
   "rewrites": [
     {
-      "source": "/api/blocks/latest",
-      "destination": "/server/server.js"
-    },
-    {
-      "source": "/api/blocks",
-      "destination": "/server/server.js"
-    },
-    {
-      "source": "/api/blocks/:hash",
+      "source": "/api/(.*)",
       "destination": "/server/server.js"
     },
     {
