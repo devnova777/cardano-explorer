@@ -1,10 +1,10 @@
 {
-  "name": "blockexplorer",
+  "name": "cardano-explorer",
   "version": "1.0.0",
   "main": "server.js",
   "type": "module",
   "description": "A simple block explorer for Cardano using Blockfrost API",
-  "author": "James Barlay",
+  "author": "James Barclay",
   "license": "ISC",
   "keywords": [
     "Cardano",
