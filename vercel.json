@@ -27,6 +27,11 @@
   "env": {
     "BLOCKFROST_API_KEY": "@blockfrost-api-key"
   },
+  "github": {
+    "enabled": true,
+    "silent": false,
+    "autoJobCancellation": true
+  },
   "headers": [
     {
       "source": "/(.*)",
