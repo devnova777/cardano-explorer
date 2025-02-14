@@ -29,7 +29,7 @@
     }
   ],
   "env": {
-    "BLOCKFROST_API_KEY": "@blockfrost-api-key"
+    "BLOCKFROST_API_KEY": "$BLOCKFROST_API_KEY"
   },
   "github": {
     "enabled": true,
