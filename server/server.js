@@ -46,6 +46,7 @@ app.use('/api', validateApiConfig);
 // Request logging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log('API Key present:', !!process.env.BLOCKFROST_API_KEY);
   next();
 });
 
@@ -214,6 +215,18 @@ app.get(
     });
   })
 );
+
+// Debug endpoint
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api/debug', (req, res) => {
+    res.json({
+      envVars: {
+        hasApiKey: !!process.env.BLOCKFROST_API_KEY,
+        nodeEnv: process.env.NODE_ENV,
+      },
+    });
+  });
+}
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

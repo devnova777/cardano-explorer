@@ -24,9 +24,6 @@
       "use": "@vercel/static"
     }
   ],
-  "env": {
-    "BLOCKFROST_API_KEY": "BLOCKFROST_API_KEY"
-  },
   "github": {
     "enabled": true,
     "silent": false,

@@ -10,11 +10,26 @@ const BASE_URL = '/api';
  * @returns {Promise<Object>} Latest block data
  */
 export async function getLatestBlock() {
-  const response = await fetch(`${BASE_URL}/block/latest`);
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+  try {
+    const response = await fetch(`${BASE_URL}/block/latest`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      console.error('API Error:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorData,
+      });
+      throw new Error(
+        `HTTP error! status: ${response.status} - ${
+          errorData?.message || response.statusText
+        }`
+      );
+    }
+    return response.json();
+  } catch (error) {
+    console.error('Request failed:', error);
+    throw error;
   }
-  return response.json();
 }
 
 /**
