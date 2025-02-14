@@ -434,7 +434,8 @@ body {
 }
 
 /* Back button styles */
-.back-btn {
+/* Action button styles - unified button class */
+.action-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -448,31 +449,41 @@ body {
   min-width: fit-content;
   background-color: var(--cardano-blue-light);
   border: 1px solid transparent;
+  cursor: pointer;
 }
 
-.back-btn:hover {
+.action-btn:hover {
   background-color: white;
   border-color: var(--cardano-blue);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.back-btn-text {
+.action-btn-text {
   font-size: 1.1rem;
   font-weight: 600;
   transition: transform 0.2s ease;
 }
 
-.back-btn:hover .back-btn-text {
+.action-btn:hover .action-btn-text {
   transform: translateX(-2px);
 }
 
-.back-icon {
+/* Only needed for buttons with icons */
+.action-btn-icon {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
 }
 
+/* Button group styles */
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+/* Detail type style (keeping this separate as it's not a button) */
 .detail-type {
   font-size: 1.25rem;
   font-weight: 600;
@@ -480,7 +491,6 @@ body {
   margin-left: auto;
   white-space: nowrap;
 }
-
 /* Details content specific styles */
 .detail-row {
   flex-shrink: 0;

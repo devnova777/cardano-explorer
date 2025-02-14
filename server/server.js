@@ -13,10 +13,13 @@ import { APIError } from './utils/APIError.js';
 import { asyncHandler } from './middleware/asyncHandler.js';
 import { errorHandler, validateApiConfig } from './middleware/errorHandler.js';
 
-dotenv.config();
+// Load env vars in development
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // ES Module dirname setup
 const __filename = fileURLToPath(import.meta.url);
