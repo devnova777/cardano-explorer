@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardano Block Explorer - Details</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>
+                <div class="header-icons">
+                    <img src="../images/cardano-ada-logo.png" alt="Cardano Logo" class="logo">
+                    <img src="../images/Explore.svg" alt="Explorer Icon" class="explorer-icon">
+                </div>
+                <span class="header-title">Cardano Explorer</span>
+            </h1>
+            <div class="search-bar">
+                <input type="text" placeholder="Search block, transaction, wallet or NFT">
+                <button class="search-btn">
+                    <img src="../images/Explore.svg" alt="Search" class="search-icon">
+                    Search
+                </button>
+            </div>
+        </header>
+
+
+        <div class="navigation-bar">
+            <a href="../index.html" class="back-btn">
+                <span class="back-btn-text">Back to List</span>
+            </a>
+            <div class="detail-type"></div>
+        </div>
+
+        <div class="card">
+            <div class="scrollable-content" id="details-content">
+                <!-- Content will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <span>© 2025 James Barclay</span>
+            <a href="#" target="_blank" rel="noopener noreferrer">GitHub</a>
+        </div>
+    </footer>
+    </div>
+    <script type="module" src="../js/api.js"></script>
+    <script type="module" src="../js/ui.js"></script>
+    <script type="module" src="../js/details.js"></script>
+</body>
+
+</html>
