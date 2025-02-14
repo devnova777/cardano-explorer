@@ -1,0 +1,11 @@
+.git
+.env
+.env.*
+node_modules
+docs
+*.md
+.gitignore
+.vercelignore
+*.log
+.vscode
+.idea 
