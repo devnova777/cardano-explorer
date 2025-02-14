@@ -1,7 +1,7 @@
 // Constants for common values and elements
 const LOVELACE_TO_ADA = 1000000;
 const LATEST_BLOCK_TARGET = 'latest-block-info';
-const CONTENT_TARGET = 'block-content';
+const CONTENT_TARGET = 'block-list';
 
 // Helper functions
 function getElement(id) {

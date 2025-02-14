@@ -4,11 +4,7 @@
   "trailingSlash": false,
   "builds": [
     {
-      "src": "server/**/*.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "api/**/*.js",
+      "src": "server/server.js",
       "use": "@vercel/node"
     },
     {
@@ -112,7 +108,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/server/api/:path*"
+      "destination": "/server/server.js"
     },
     { "source": "/pages/:path*", "destination": "/pages/:path*" },
     { "source": "/:path*", "destination": "/:path*" }
