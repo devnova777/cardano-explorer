@@ -11,7 +11,7 @@ const BASE_URL = '/api';
  */
 export async function getLatestBlock() {
   try {
-    const response = await fetch(`${BASE_URL}/block/latest`);
+    const response = await fetch(`${BASE_URL}/blocks/latest`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
       console.error('API Error:', {
@@ -38,7 +38,7 @@ export async function getLatestBlock() {
  * @returns {Promise<Object>} Block details
  */
 export async function getBlockDetails(hash) {
-  const response = await fetch(`${BASE_URL}/block/${hash}`);
+  const response = await fetch(`${BASE_URL}/blocks/${hash}`);
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
   }
@@ -54,7 +54,7 @@ export async function getBlockDetails(hash) {
  */
 export async function getBlockTransactions(blockHash, page = 1, limit = 10) {
   const response = await fetch(
-    `${BASE_URL}/block/${blockHash}/transactions?page=${page}&limit=${limit}`
+    `${BASE_URL}/blocks/${blockHash}/transactions?page=${page}&limit=${limit}`
   );
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
