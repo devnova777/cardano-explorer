@@ -6,30 +6,46 @@
 const BASE_URL = '/api';
 
 /**
+ * Generic API request handler with error handling
+ * @param {string} endpoint - API endpoint to call
+ * @param {Object} options - Fetch options
+ * @returns {Promise<Object>} Response data
+ */
+async function apiRequest(endpoint, options = {}) {
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, options);
+    const data = await response.json();
+
+    if (!response.ok) {
+      const error = new Error(data.error || 'API request failed');
+      error.status = response.status;
+      throw error;
+    }
+
+    // Handle both wrapped and unwrapped response formats
+    if (data.success === false) {
+      throw new Error(data.error || 'API request failed');
+    }
+
+    // Return the data directly if it's unwrapped, or data.data if it's wrapped
+    return data.success ? data.data : data;
+  } catch (error) {
+    console.error('API request failed:', {
+      endpoint,
+      status: error.status || 500,
+      message: error.message,
+      error,
+    });
+    throw error;
+  }
+}
+
+/**
  * Fetches the latest block from the Cardano blockchain
  * @returns {Promise<Object>} Latest block data
  */
 export async function getLatestBlock() {
-  try {
-    const response = await fetch(`${BASE_URL}/blocks/latest`);
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      console.error('API Error:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorData,
-      });
-      throw new Error(
-        `HTTP error! status: ${response.status} - ${
-          errorData?.message || response.statusText
-        }`
-      );
-    }
-    return response.json();
-  } catch (error) {
-    console.error('Request failed:', error);
-    throw error;
-  }
+  return apiRequest('/blocks/latest');
 }
 
 /**
@@ -38,11 +54,7 @@ export async function getLatestBlock() {
  * @returns {Promise<Object>} Block details
  */
 export async function getBlockDetails(hash) {
-  const response = await fetch(`${BASE_URL}/blocks/${hash}`);
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  return response.json();
+  return apiRequest(`/blocks/${hash}`);
 }
 
 /**
@@ -53,13 +65,9 @@ export async function getBlockDetails(hash) {
  * @returns {Promise<Object>} Block transactions
  */
 export async function getBlockTransactions(blockHash, page = 1, limit = 10) {
-  const response = await fetch(
-    `${BASE_URL}/blocks/${blockHash}/transactions?page=${page}&limit=${limit}`
+  return apiRequest(
+    `/blocks/${blockHash}/transactions?page=${page}&limit=${limit}`
   );
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  return response.json();
 }
 
 /**
@@ -69,13 +77,7 @@ export async function getBlockTransactions(blockHash, page = 1, limit = 10) {
  * @returns {Promise<Object>} List of blocks
  */
 export async function getBlocks(page = 1, limit = 10) {
-  const response = await fetch(
-    `${BASE_URL}/blocks?page=${page}&limit=${limit}`
-  );
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  return response.json();
+  return apiRequest(`/blocks?page=${page}&limit=${limit}`);
 }
 
 /**
@@ -84,22 +86,48 @@ export async function getBlocks(page = 1, limit = 10) {
  * @returns {Promise<Object>} Transaction details
  */
 export async function getTransactionDetails(txHash) {
-  const response = await fetch(`${BASE_URL}/tx/${txHash}`);
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  return response.json();
+  return apiRequest(`/blocks/tx/${txHash}`);
 }
 
 /**
- * Generic error handler for API requests
- * @param {Response} response - Fetch API response object
- * @throws {Error} Throws an error with status and message
+ * Performs a search across blocks, transactions, and addresses
+ * @param {string} query - Search query
+ * @returns {Promise<Object>} Search results
  */
-async function handleApiError(response) {
-  const error = await response.json().catch(() => ({
-    message: 'An unknown error occurred',
-  }));
+export async function search(query) {
+  try {
+    return await apiRequest(`/blocks/search?q=${encodeURIComponent(query)}`);
+  } catch (error) {
+    // Map error messages to user-friendly versions
+    const errorMessages = {
+      'No block or transaction found':
+        'No results found for this hash. Please verify the hash and try again.',
+      'Invalid search format':
+        'Please enter a valid block hash, transaction hash, address, epoch number, or pool ID.',
+      'Search query too short': 'Please enter at least 3 characters to search.',
+      'Resource not found':
+        'No results found. Please try a different search term.',
+      'Invalid response format':
+        'Something went wrong. Please try again later.',
+    };
 
-  throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    // Find matching error message or use a default
+    const friendlyMessage =
+      Object.entries(errorMessages).find(([key]) =>
+        error.message.includes(key)
+      )?.[1] || 'Search failed. Please try again.';
+
+    const enhancedError = new Error(friendlyMessage);
+    enhancedError.status = error.status || 500;
+    throw enhancedError;
+  }
+}
+
+/**
+ * Fetches details for a specific address
+ * @param {string} address - The address to look up
+ * @returns {Promise<Object>} Address details including balance and transactions
+ */
+export async function getAddressDetails(address) {
+  return apiRequest(`/blocks/address/${address}`);
 }

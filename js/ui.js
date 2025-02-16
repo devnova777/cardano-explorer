@@ -8,6 +8,20 @@ const ELEMENTS = {
 };
 
 /**
+ * Gets an element and ensures it exists
+ * @param {string} id - Element ID
+ * @returns {HTMLElement} The element
+ * @throws {Error} If element doesn't exist
+ */
+function getElementSafe(id) {
+  const element = document.getElementById(id);
+  if (!element) {
+    throw new Error(`Element with ID "${id}" not found`);
+  }
+  return element;
+}
+
+/**
  * Creates a card template with provided content
  * @param {string} content - HTML content for the card
  * @returns {string} Complete card HTML
@@ -18,11 +32,14 @@ function createCardTemplate(content) {
 
 /**
  * Displays the latest block information
- * @param {Object} response - Response containing block data
+ * @param {Object} block - Block data
  */
-function displayLatestBlock(response) {
+function displayLatestBlock(block) {
   try {
-    const block = response.data;
+    if (!block || !block.hash || !block.height) {
+      throw new Error('Invalid block data');
+    }
+
     const content = `
       <div class="latest-block-info">
         <div class="info-row">
@@ -56,7 +73,7 @@ function displayLatestBlock(response) {
       </div>
     `;
 
-    getElement(ELEMENTS.LATEST_BLOCK).innerHTML = content;
+    getElementSafe(ELEMENTS.LATEST_BLOCK).innerHTML = content;
   } catch (error) {
     console.error('Error displaying latest block:', error);
     displayError('Failed to display latest block', ELEMENTS.LATEST_BLOCK);
@@ -65,18 +82,18 @@ function displayLatestBlock(response) {
 
 /**
  * Displays list of blocks
- * @param {Object} response - Response containing blocks data
+ * @param {Object} blockData - Block list data
  */
-function displayBlockList(response) {
+function displayBlockList(blockData) {
   try {
-    const blockList = getElement(ELEMENTS.BLOCK_LIST);
+    const blockList = getElementSafe(ELEMENTS.BLOCK_LIST);
 
-    if (!response.data || !response.data.blocks) {
+    if (!blockData || !blockData.blocks) {
       blockList.innerHTML = '<p>No blocks available.</p>';
       return;
     }
 
-    const { blocks } = response.data;
+    const { blocks } = blockData;
 
     const blockListItems = blocks
       .map(
@@ -110,12 +127,33 @@ function displayBlockList(response) {
 }
 
 /**
- * Displays detailed block information
- * @param {Object} response - Response containing block data
+ * Shows the block content section
  */
-function displayBlock(response) {
+function showBlockContent() {
+  const blockContent = getElementSafe(ELEMENTS.CONTENT);
+  blockContent.style.display = 'block';
+}
+
+/**
+ * Hides the block content section
+ */
+function hideBlockContent() {
+  const blockContent = getElementSafe(ELEMENTS.CONTENT);
+  blockContent.style.display = 'none';
+}
+
+/**
+ * Displays detailed block information
+ * @param {Object} block - Block data
+ */
+function displayBlock(block) {
   try {
-    const block = response.data;
+    if (!block || !block.hash || !block.height) {
+      throw new Error('Invalid block data');
+    }
+
+    showBlockContent();
+
     const content = `
       <div class="block-details">
         <div class="header-section">
@@ -162,12 +200,13 @@ function displayBlock(response) {
       </div>
     `;
 
-    getElement(ELEMENTS.CONTENT).innerHTML = createCardTemplate(content);
+    getElementSafe(ELEMENTS.CONTENT).innerHTML = createCardTemplate(content);
 
     // Add event listeners
     const backButton = document.getElementById('back-to-list');
     if (backButton) {
       backButton.addEventListener('click', () => {
+        hideBlockContent();
         window.loadBlockList();
       });
     }
@@ -186,14 +225,14 @@ function displayBlock(response) {
 
 /**
  * Displays transaction information
- * @param {Object} response - Response containing transaction data
+ * @param {Object} txData - Transaction data
  */
-function displayTransactions(response) {
+function displayTransactions(txData) {
   try {
-    const { transactions } = response.data;
+    const { transactions } = txData;
 
     if (!transactions || transactions.length === 0) {
-      getElement(ELEMENTS.CONTENT).innerHTML = createCardTemplate(
+      getElementSafe(ELEMENTS.CONTENT).innerHTML = createCardTemplate(
         '<p>No transactions found for this block.</p>'
       );
       return;
@@ -234,7 +273,7 @@ function displayTransactions(response) {
       </div>
     `;
 
-    getElement(ELEMENTS.CONTENT).innerHTML = content;
+    getElementSafe(ELEMENTS.CONTENT).innerHTML = content;
 
     // Add event listener for back button
     const backButton = document.getElementById('back-to-block');
@@ -248,7 +287,7 @@ function displayTransactions(response) {
     document.querySelectorAll('.transaction-item').forEach((item) => {
       item.addEventListener('click', () => {
         const txHash = item.dataset.txHash;
-        console.log('Transaction clicked:', txHash);
+        window.loadTransactionDetails(txHash);
       });
     });
   } catch (error) {
@@ -264,7 +303,7 @@ function displayTransactions(response) {
  */
 function displayError(message, targetId = ELEMENTS.CONTENT) {
   try {
-    getElement(targetId).innerHTML = `
+    getElementSafe(targetId).innerHTML = `
       <div class="error-message">
         Error: ${message}
       </div>
@@ -280,7 +319,7 @@ function displayError(message, targetId = ELEMENTS.CONTENT) {
  */
 function displayLoading(targetId = ELEMENTS.CONTENT) {
   try {
-    getElement(targetId).innerHTML = `
+    getElementSafe(targetId).innerHTML = `
       <div class="loading">
         Loading...
       </div>
@@ -299,5 +338,7 @@ export {
   displayError,
   displayLoading,
   createCardTemplate,
+  showBlockContent,
+  hideBlockContent,
   ELEMENTS,
 };

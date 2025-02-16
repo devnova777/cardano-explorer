@@ -1,25 +1,59 @@
-export const errorHandler = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
+import { APIError } from '../utils/APIError.js';
 
-  // Log error for debugging
-  console.error(`${new Date().toISOString()} - Error:`, {
+/**
+ * Validates API configuration
+ */
+export const validateApiConfig = (req, res, next) => {
+  if (!process.env.BLOCKFROST_API_KEY) {
+    return res.status(500).json({
+      error: 'Blockfrost API key is not configured',
+    });
+  }
+  next();
+};
+
+/**
+ * Global error handler
+ */
+export const errorHandler = (err, req, res, next) => {
+  // Ensure we have a valid status code
+  let statusCode = 500;
+
+  if (err.status && !isNaN(err.status)) {
+    statusCode = err.status;
+  } else if (err.statusCode && !isNaN(err.statusCode)) {
+    statusCode = err.statusCode;
+  }
+
+  console.error('Error:', {
     path: req.path,
-    statusCode: err.statusCode,
+    statusCode,
     message: err.message,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
   });
 
-  res.status(err.statusCode).json({
-    status: err.status,
-    message: err.message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-  });
-};
-
-export const validateApiConfig = (req, res, next) => {
-  if (!process.env.BLOCKFROST_API_KEY) {
-    throw new APIError('API configuration is missing', 500);
+  // Handle Blockfrost specific errors
+  if (err instanceof APIError) {
+    return res.status(statusCode).json({
+      success: false,
+      error: err.message,
+      status: statusCode,
+    });
   }
-  next();
+
+  // Handle validation errors
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      success: false,
+      error: err.message,
+      status: 400,
+    });
+  }
+
+  // Handle other errors
+  res.status(statusCode).json({
+    success: false,
+    error: err.message || 'Internal Server Error',
+    status: statusCode,
+  });
 };

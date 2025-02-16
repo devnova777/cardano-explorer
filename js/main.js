@@ -3,6 +3,7 @@ import {
   getBlocks,
   getBlockDetails,
   getBlockTransactions,
+  search,
 } from './api.js';
 import {
   displayLatestBlock,
@@ -11,17 +12,23 @@ import {
   displayTransactions,
   displayError,
   displayLoading,
+  showBlockContent,
+  hideBlockContent,
 } from './ui.js';
 import { getElement } from './utils.js';
+import { renderSearchResults } from './renderers/search.js';
 
 // Constants
 const REFRESH_INTERVAL = 20000; // 20 seconds
 const ELEMENTS = {
   LATEST_BLOCK: 'latest-block-info',
   BLOCK_LIST: 'block-list',
-  BLOCK_CONTENT: 'block-content',
+  CONTENT: 'block-content',
   FETCH_BLOCK: 'fetch-block',
   AUTO_REFRESH: 'auto-refresh',
+  SEARCH_INPUT: 'search-input',
+  SEARCH_BUTTON: 'search-btn',
+  MAIN_CONTENT: 'main-content',
 };
 
 // Application state
@@ -49,20 +56,29 @@ window.fetchLatestBlock = async function fetchLatestBlock() {
     displayLoading(ELEMENTS.LATEST_BLOCK);
     const block = await getLatestBlock();
 
-    if (!block || !block.data) {
-      throw new Error('Invalid block data received');
+    console.log('Latest block response:', block); // Debug log
+
+    if (!block) {
+      throw new Error('No block data received from API');
     }
 
-    // Always update the latest block display
+    if (!block.hash || !block.height) {
+      console.error('Invalid block data structure:', block); // Debug log
+      throw new Error('Invalid block data structure received');
+    }
+
+    // Only update the latest block display
     displayLatestBlock(block);
-
-    // If we're not viewing a specific block, update the main content too
-    if (!currentBlockHash) {
-      displayBlock(block);
-    }
   } catch (error) {
-    console.error('Error fetching latest block:', error);
-    displayError('Failed to fetch block data', ELEMENTS.LATEST_BLOCK);
+    console.error('Error fetching latest block:', {
+      error,
+      message: error.message,
+      stack: error.stack,
+    });
+    displayError(
+      'Failed to fetch block data: ' + error.message,
+      ELEMENTS.LATEST_BLOCK
+    );
   }
 };
 
@@ -79,16 +95,31 @@ window.loadBlockTransactions = async function loadBlockTransactions(blockHash) {
   try {
     displayLoading(ELEMENTS.BLOCK_LIST);
     currentBlockHash = blockHash;
-    const response = await getBlockTransactions(blockHash);
+    const txData = await getBlockTransactions(blockHash);
 
-    if (!response || !response.data) {
-      throw new Error('Invalid transaction data received');
+    console.log('Transaction data response:', txData); // Debug log
+
+    if (!txData) {
+      throw new Error('No transaction data received from API');
     }
 
-    displayTransactions(response);
+    if (!txData.transactions || !Array.isArray(txData.transactions)) {
+      console.error('Invalid transaction data structure:', txData); // Debug log
+      throw new Error('Invalid transaction data structure received');
+    }
+
+    displayTransactions(txData);
   } catch (error) {
-    console.error('Error loading transactions:', error);
-    displayError('Failed to load transactions', ELEMENTS.BLOCK_LIST);
+    console.error('Error loading transactions:', {
+      error,
+      blockHash,
+      message: error.message,
+      stack: error.stack,
+    });
+    displayError(
+      'Failed to load transactions: ' + error.message,
+      ELEMENTS.BLOCK_LIST
+    );
   }
 };
 
@@ -97,6 +128,7 @@ window.loadBlockTransactions = async function loadBlockTransactions(blockHash) {
  */
 window.clearBlockSelection = function clearBlockSelection() {
   currentBlockHash = null;
+  hideBlockContent();
   window.fetchLatestBlock();
 };
 
@@ -137,16 +169,32 @@ function stopAutoRefresh() {
 window.loadBlockList = async function loadBlockList(page = 1) {
   try {
     displayLoading(ELEMENTS.BLOCK_LIST);
-    const response = await getBlocks(page);
+    hideBlockContent();
+    const blockData = await getBlocks(page);
 
-    if (!response || !response.data) {
-      throw new Error('Invalid block list data received');
+    console.log('Block list response:', blockData); // Debug log
+
+    if (!blockData) {
+      throw new Error('No block list data received from API');
     }
 
-    displayBlockList(response);
+    if (!blockData.blocks || !Array.isArray(blockData.blocks)) {
+      console.error('Invalid block list data structure:', blockData); // Debug log
+      throw new Error('Invalid block list data structure received');
+    }
+
+    displayBlockList(blockData);
   } catch (error) {
-    console.error('Error loading block list:', error);
-    displayError('Failed to load block list', ELEMENTS.BLOCK_LIST);
+    console.error('Error loading block list:', {
+      error,
+      page,
+      message: error.message,
+      stack: error.stack,
+    });
+    displayError(
+      'Failed to load block list: ' + error.message,
+      ELEMENTS.BLOCK_LIST
+    );
   }
 };
 
@@ -161,6 +209,38 @@ window.loadBlockDetails = function loadBlockDetails(blockHash) {
   }
   window.location.href = `pages/details.html?hash=${blockHash}&type=block`;
 };
+
+/**
+ * Handles search functionality
+ * @param {string} query - The search query
+ */
+async function handleSearch(query) {
+  if (!query || query.trim().length < 3) {
+    alert('Please enter at least 3 characters to search');
+    return;
+  }
+
+  try {
+    // Hide the explorer grid and show the main content for search results
+    const explorerGrid = document.querySelector('.explorer-grid');
+    if (explorerGrid) {
+      explorerGrid.style.display = 'none';
+    }
+
+    // Create main content div if it doesn't exist
+    let mainContent = document.getElementById(ELEMENTS.MAIN_CONTENT);
+    if (!mainContent) {
+      mainContent = document.createElement('div');
+      mainContent.id = ELEMENTS.MAIN_CONTENT;
+      document.querySelector('.container').appendChild(mainContent);
+    }
+
+    await renderSearchResults(query.trim());
+  } catch (error) {
+    console.error('Search error:', error);
+    displayError('Failed to perform search', ELEMENTS.MAIN_CONTENT);
+  }
+}
 
 /**
  * Sets up event listeners for the application
@@ -181,6 +261,24 @@ function setupEventListeners() {
       }
     });
   }
+
+  // Add search event listeners
+  const searchInput = document.querySelector('.search-bar input');
+  const searchButton = document.querySelector('.search-btn');
+
+  if (searchInput && searchButton) {
+    // Handle search button click
+    searchButton.addEventListener('click', () => {
+      handleSearch(searchInput.value);
+    });
+
+    // Handle enter key in search input
+    searchInput.addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') {
+        handleSearch(searchInput.value);
+      }
+    });
+  }
 }
 
 /**
@@ -188,14 +286,11 @@ function setupEventListeners() {
  */
 async function initializeApp() {
   try {
+    // Hide block content initially
+    hideBlockContent();
+
     // Initial load of latest block and block list
     await Promise.all([window.fetchLatestBlock(), window.loadBlockList()]);
-
-    // Clear the right panel initially
-    const blockContent = getElement(ELEMENTS.BLOCK_CONTENT);
-    if (blockContent) {
-      blockContent.innerHTML = '';
-    }
 
     startAutoRefresh();
     setupEventListeners();
