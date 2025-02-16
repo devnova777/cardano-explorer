@@ -89,6 +89,8 @@ GET /block/:hash/transactions
 #### Parameters
 
 - `hash`: The block hash (64 characters)
+- `page`: Page number (optional, default: 1)
+- `limit`: Items per page (optional, default: 20)
 
 #### Response
 
@@ -106,23 +108,28 @@ GET /block/:hash/transactions
         "output_amount": "string",
         "fees": "string"
       }
-    ]
+    ],
+    "pagination": {
+      "currentPage": number,
+      "totalPages": number,
+      "hasNext": boolean,
+      "hasPrevious": boolean
+    }
   }
 }
 ```
 
-### Get Block List
+### Get Address Details
 
-Retrieves a paginated list of blocks.
+Retrieves details about a specific address.
 
 ```
-GET /blocks
+GET /address/:address
 ```
 
-#### Query Parameters
+#### Parameters
 
-- `page`: Page number (default: 1)
-- `limit`: Items per page (default: 10)
+- `address`: The Cardano address
 
 #### Response
 
@@ -130,25 +137,119 @@ GET /blocks
 {
   "success": true,
   "data": {
-    "blocks": [
+    "address": "string",
+    "balance": "string",
+    "stake_address": "string",
+    "utxos": [
       {
-        "hash": "string",
-        "height": number,
-        "time": number
+        "tx_hash": "string",
+        "output_index": number,
+        "amount": "string",
+        "assets": [
+          {
+            "unit": "string",
+            "quantity": "string"
+          }
+        ]
       }
     ],
-    "pagination": {
-      "currentPage": number,
-      "totalPages": number,
-      "hasNext": boolean,
-      "hasPrevious": boolean,
-      "totalBlocks": number
-    }
+    "transactions": [
+      {
+        "tx_hash": "string",
+        "block_height": number,
+        "block_time": number
+      }
+    ]
   }
 }
 ```
 
-## Error Responses
+## Utility Functions
+
+### Currency Utilities
+
+```javascript
+// Convert Lovelace to ADA
+const ada = formatAda('5000000'); // "5.000000"
+
+// Convert ADA to Lovelace
+const lovelace = adaToLovelace('5.5'); // "5500000"
+
+// Format number with options
+const formatted = formatNumber('1234.5678', {
+  decimals: 2,
+  trimZeros: true,
+}); // "1,234.57"
+
+// Validate ADA amount
+const isValid = isValidAdaAmount('5.123456'); // true
+```
+
+### Date Utilities
+
+```javascript
+// Format date
+const date = formatDate(1645564800); // "Feb 23, 2022, 12:00:00 AM"
+
+// Get relative time
+const relative = getRelativeTime(1645564800); // "2 years ago"
+
+// Format short date
+const shortDate = formatShortDate(1645564800); // "2022-02-23"
+
+// Check if within time range
+const isRecent = isWithinRange(1645564800, {
+  value: 24,
+  unit: 'hours',
+}); // false
+```
+
+### DOM Utilities
+
+```javascript
+// Get element safely
+const element = getElement('my-id');
+
+// Add event listener
+addSafeEventListener(element, 'click', () => {});
+
+// Remove event listener
+removeSafeEventListener(element, 'click', handler);
+
+// Create element
+const div = createElement(
+  'div',
+  {
+    className: 'my-class',
+    dataset: { id: '123' },
+  },
+  'Content'
+);
+```
+
+### UI Utilities
+
+```javascript
+// Display error
+displayError('Failed to load', 'error-container', {
+  isWarning: true,
+  autoHide: 3000,
+});
+
+// Display loading
+displayLoading('content-container', {
+  message: 'Loading blocks...',
+  showSpinner: true,
+});
+
+// Clear content
+clearContent('container-id');
+
+// Toggle visibility
+toggleVisibility('element-id', true);
+```
+
+## Error Handling
 
 ### Standard Error Format
 
@@ -156,6 +257,7 @@ GET /blocks
 {
   "status": "error",
   "message": "string",
+  "type": "string",
   "stack": "string" // Only in development
 }
 ```
@@ -168,6 +270,8 @@ GET /blocks
 | 400  | Bad Request           |
 | 401  | Unauthorized          |
 | 403  | Forbidden             |
+| 404  | Not Found             |
+| 408  | Request Timeout       |
 | 429  | Too Many Requests     |
 | 500  | Internal Server Error |
 | 502  | Bad Gateway           |
@@ -176,31 +280,36 @@ GET /blocks
 
 - Window: 15 minutes
 - Max Requests: 100 per IP
+- Headers: X-RateLimit-Limit, X-RateLimit-Remaining
 - Response when limit exceeded:
 
 ```json
 {
-  "error": "Too many requests, please try again later."
+  "status": "error",
+  "message": "Too many requests, please try again later.",
+  "type": "rate_limit_exceeded"
 }
 ```
 
 ## Security Headers
 
-All endpoints are protected with the following security headers:
+All endpoints are protected with:
 
 - Content-Security-Policy
 - X-Frame-Options
 - X-XSS-Protection
 - X-Content-Type-Options
 - Referrer-Policy
+- Strict-Transport-Security (in production)
 
 ## CORS
 
 Cross-Origin Resource Sharing is configured with:
 
-- Allowed origins: All (in development)
+- Allowed origins: Configurable per environment
 - Methods: GET
 - Headers: Content-Type, Accept
+- Credentials: false
 
 ## Example Usage
 
@@ -231,9 +340,9 @@ curl http://localhost:3001/api/block/latest
 # Get specific block
 curl http://localhost:3001/api/block/{block_hash}
 
-# Get block transactions
-curl http://localhost:3001/api/block/{block_hash}/transactions
+# Get block transactions with pagination
+curl http://localhost:3001/api/block/{block_hash}/transactions?page=1&limit=20
 
-# Get block list
-curl http://localhost:3001/api/blocks?page=1&limit=10
+# Get address details
+curl http://localhost:3001/api/address/{address}
 ```

@@ -11,16 +11,7 @@
  * @module middleware/asyncHandler
  */
 
-/**
- * Custom error for timeout handling
- */
-class RequestTimeoutError extends Error {
-  constructor(message = 'Request timed out') {
-    super(message);
-    this.name = 'RequestTimeoutError';
-    this.status = 408;
-  }
-}
+import { APIError } from '../utils/APIError.js';
 
 /**
  * Wraps an async function with timeout and error handling
@@ -36,20 +27,21 @@ export const asyncHandler = (fn, options = {}) => {
     // Create timeout promise
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
-        reject(new RequestTimeoutError());
+        reject(APIError.timeout());
       }, timeout);
     });
 
     // Create handler promise
     const handlerPromise = Promise.resolve(fn(req, res, next)).catch(
       (error) => {
-        // Preserve error status and custom properties
-        if (error instanceof Error) {
-          if (!error.status && error.name === 'ValidationError') {
-            error.status = 400;
-          }
-          if (!error.status && error.name === 'NotFoundError') {
-            error.status = 404;
+        // Convert to APIError if not already
+        if (!(error instanceof APIError)) {
+          if (error.name === 'ValidationError') {
+            error = APIError.validation(error.message);
+          } else if (error.name === 'NotFoundError') {
+            error = APIError.notFound(error.message);
+          } else {
+            error = new APIError(error.message, error.status || 500);
           }
         }
 
@@ -73,6 +65,7 @@ export const asyncHandler = (fn, options = {}) => {
             name: error.name,
             message: error.message,
             status: error.status,
+            type: error.type,
             stack: error.stack,
           },
         });
@@ -84,6 +77,20 @@ export const asyncHandler = (fn, options = {}) => {
 };
 
 /**
+ * Specialized handler for API routes with shorter timeout
+ */
+export const apiHandler = asyncHandler(null, {
+  timeout: 15000, // 15 second timeout for API routes
+});
+
+/**
+ * Specialized handler for database operations with longer timeout
+ */
+export const dbHandler = asyncHandler(null, {
+  timeout: 60000, // 60 second timeout for DB operations
+});
+
+/**
  * Creates an async handler with custom options
  * @param {Object} options - Handler options
  * @returns {Function} Configured async handler creator
@@ -93,24 +100,16 @@ export const createAsyncHandler = (options = {}) => {
 };
 
 /**
- * Specialized handler for API routes with shorter timeout
- */
-export const apiHandler = createAsyncHandler({
-  timeout: 15000, // 15 second timeout for API routes
-});
-
-/**
- * Specialized handler for database operations with longer timeout
- */
-export const dbHandler = createAsyncHandler({
-  timeout: 60000, // 60 second timeout for DB operations
-});
-
-/**
  * Error types for consistent error handling
  */
 export const ErrorTypes = {
-  RequestTimeout: RequestTimeoutError,
+  RequestTimeout: class RequestTimeoutError extends Error {
+    constructor(message = 'Request timed out') {
+      super(message);
+      this.name = 'RequestTimeoutError';
+      this.status = 408;
+    }
+  },
   ValidationError: class ValidationError extends Error {
     constructor(message) {
       super(message);
