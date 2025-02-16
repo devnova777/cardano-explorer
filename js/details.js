@@ -199,13 +199,13 @@ function displayLoading() {
 window.loadBlockDetails = async function loadBlockDetails(blockHash) {
   try {
     displayLoading();
-    const response = await getBlockDetails(blockHash);
+    const blockData = await getBlockDetails(blockHash);
 
-    if (!response?.data) {
-      throw new Error('Invalid response data');
+    if (!blockData) {
+      throw new Error('No block data received');
     }
 
-    displayBlockDetails(response.data);
+    displayBlockDetails(blockData);
   } catch (error) {
     console.error('Error loading block details:', error);
     displayError(error.message || 'Failed to load block details');
@@ -219,16 +219,16 @@ window.loadBlockDetails = async function loadBlockDetails(blockHash) {
 window.loadBlockTransactions = async function loadBlockTransactions(blockHash) {
   try {
     displayLoading();
-    const [blockResponse, txResponse] = await Promise.all([
+    const [blockData, txData] = await Promise.all([
       getBlockDetails(blockHash),
       getBlockTransactions(blockHash),
     ]);
 
-    if (!blockResponse?.data || !txResponse?.data) {
-      throw new Error('Invalid response data');
+    if (!blockData || !txData?.transactions) {
+      throw new Error('Invalid block or transaction data');
     }
 
-    displayBlockDetails(blockResponse.data, txResponse.data.transactions);
+    displayBlockDetails(blockData, txData.transactions);
   } catch (error) {
     console.error('Error loading block transactions:', error);
     displayError(error.message || 'Failed to load block transactions');
@@ -242,13 +242,13 @@ window.loadBlockTransactions = async function loadBlockTransactions(blockHash) {
 window.loadTransactionDetails = async function loadTransactionDetails(txHash) {
   try {
     displayLoading();
-    const response = await getTransactionDetails(txHash);
+    const txData = await getTransactionDetails(txHash);
 
-    if (!response?.data) {
-      throw new Error('Invalid response data');
+    if (!txData) {
+      throw new Error('No transaction data received');
     }
 
-    displayTransactionDetails(response.data);
+    displayTransactionDetails(txData);
   } catch (error) {
     console.error('Error loading transaction details:', error);
     displayError(error.message || 'Failed to load transaction details');

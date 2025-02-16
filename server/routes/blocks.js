@@ -13,7 +13,16 @@ import { APIError } from '../utils/APIError.js';
 
 const router = express.Router();
 
-// Logging middleware for this router
+// Common validation middleware
+const validateHash = (req, res, next) => {
+  const hash = req.params.hash;
+  if (!hash || hash === 'undefined' || hash.length !== 64) {
+    throw new APIError('Invalid hash', 400);
+  }
+  next();
+};
+
+// Logging middleware
 router.use((req, res, next) => {
   console.log('Route hit:', {
     baseUrl: req.baseUrl,
@@ -24,7 +33,7 @@ router.use((req, res, next) => {
   next();
 });
 
-// Search endpoint must be first to prevent conflicts
+// Search endpoint (must be first to prevent conflicts)
 router.get(
   '/search',
   asyncHandler(async (req, res) => {
@@ -40,7 +49,6 @@ router.get(
         data: results,
       });
     } catch (error) {
-      // Log the full error for debugging
       console.error('Search error:', {
         query,
         error: {
@@ -51,18 +59,16 @@ router.get(
         },
       });
 
-      // Convert any error to APIError format
       if (!(error instanceof APIError)) {
         if (error.status === 404 || error.message.includes('not found')) {
           throw new APIError('No results found for your search', 404);
-        } else {
-          throw new APIError(
-            error.message || 'Search failed',
-            error.status || 500
-          );
         }
+        throw new APIError(
+          error.message || 'Search failed',
+          error.status || 500
+        );
       }
-      throw error; // Let the global error handler handle it
+      throw error;
     }
   })
 );
@@ -72,10 +78,7 @@ router.get(
   '/latest',
   asyncHandler(async (req, res) => {
     const data = await getLatestBlock();
-    res.json({
-      success: true,
-      data,
-    });
+    res.json({ success: true, data });
   })
 );
 
@@ -84,42 +87,30 @@ router.get(
   '/address/:address',
   asyncHandler(async (req, res) => {
     const { address } = req.params;
-    const addressDetails = await getAddressDetails(address);
-    res.json({
-      success: true,
-      data: addressDetails,
-    });
+    const data = await getAddressDetails(address);
+    res.json({ success: true, data });
   })
 );
 
 // Transaction details endpoint
 router.get(
   '/tx/:hash',
+  validateHash,
   asyncHandler(async (req, res) => {
     const { hash } = req.params;
     const data = await getTransactionDetails(hash);
-    res.json({
-      success: true,
-      data,
-    });
+    res.json({ success: true, data });
   })
 );
 
 // Block transactions endpoint
 router.get(
   '/:hash/transactions',
+  validateHash,
   asyncHandler(async (req, res) => {
     const { hash } = req.params;
-
-    if (!hash || hash === 'undefined') {
-      throw new APIError('Invalid block hash', 400);
-    }
-
     const data = await getBlockTransactions(hash);
-    res.json({
-      success: true,
-      data,
-    });
+    res.json({ success: true, data });
   })
 );
 
@@ -129,28 +120,18 @@ router.get(
   asyncHandler(async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
     const data = await getBlocks(parseInt(page), parseInt(limit));
-    res.json({
-      success: true,
-      data,
-    });
+    res.json({ success: true, data });
   })
 );
 
 // Block by hash endpoint (must be last as it's a catch-all)
 router.get(
   '/:hash',
+  validateHash,
   asyncHandler(async (req, res) => {
     const { hash } = req.params;
-
-    if (!hash || hash === 'undefined') {
-      throw new APIError('Invalid block hash', 400);
-    }
-
     const block = await getBlockByHash(hash);
-    res.json({
-      success: true,
-      data: block,
-    });
+    res.json({ success: true, data: block });
   })
 );
 
