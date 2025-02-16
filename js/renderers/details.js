@@ -212,88 +212,140 @@ export function renderTransactionDetails(transaction) {
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M15 18l-6-6 6-6"/>
         </svg>
-        Back to Transactions
+        Back to Block
       </button>
     `;
 
+    // Calculate total value transferred
+    const totalValue = formatAda(transaction.output_amount);
+    const fee = formatAda(transaction.fees);
+    const totalWithFees = formatAda(
+      (BigInt(transaction.output_amount) + BigInt(transaction.fees)).toString()
+    );
+
     return `
       <div class="transaction-details">
-        <div class="block-header">
-          <h3 class="section-title">Transaction Details</h3>
+        <div class="transaction-header">
+          <h3 class="section-title">Transaction Overview</h3>
+          ${createHashElement(transaction.hash, 'Transaction Hash')}
         </div>
 
         <div class="transaction-summary">
-          ${createHashElement(transaction.hash, 'Transaction Hash')}
-          <div class="detail-row">
-            <span class="detail-label">Block</span>
-            <span class="detail-value">
-              <a href="?hash=${
-                transaction.block
-              }&type=block" class="hash-link">${transaction.block}</a>
-            </span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Time</span>
-            <span class="detail-value">${formatDate(
-              transaction.block_time
-            )}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Total Input</span>
-            <span class="detail-value">${formatAda(
-              transaction.input_amount
-            )} ₳</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Total Output</span>
-            <span class="detail-value">${formatAda(
-              transaction.output_amount
-            )} ₳</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Fees</span>
-            <span class="detail-value">${formatAda(transaction.fees)} ₳</span>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <div class="summary-label">Status</div>
+              <div class="summary-value status-confirmed">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+                Confirmed
+              </div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">Block</div>
+              <div class="summary-value">
+                <a href="?hash=${
+                  transaction.block
+                }&type=block" class="hash-link">${transaction.block}</a>
+              </div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">Timestamp</div>
+              <div class="summary-value">${formatDate(
+                transaction.block_time
+              )}</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">Total Value</div>
+              <div class="summary-value highlight">${totalValue} ₳</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">Fee</div>
+              <div class="summary-value">${fee} ₳</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">Total Value + Fees</div>
+              <div class="summary-value">${totalWithFees} ₳</div>
+            </div>
           </div>
         </div>
 
         <div class="transaction-io">
-          <div class="inputs-section">
-            <h3 class="section-title">Inputs (${transaction.inputs})</h3>
-            ${transaction.utxos.inputs
-              .map(
-                (input) => `
-              <div class="utxo-item">
-                ${createHashElement(input.tx_hash, 'Input UTXO')}
-                <div class="detail-row">
-                  <span class="detail-label">Amount</span>
-                  <span class="detail-value">${formatAda(input.amount)} ₳</span>
+          <div class="io-section inputs-section">
+            <div class="io-header">
+              <h3 class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
+                Inputs (${transaction.inputs})
+              </h3>
+              <div class="io-total">${formatAda(
+                transaction.input_amount
+              )} ₳</div>
+            </div>
+            <div class="io-list">
+              ${transaction.utxos.inputs
+                .map(
+                  (input, index) => `
+                <div class="io-item">
+                  <div class="io-index">#${index + 1}</div>
+                  <div class="io-content">
+                    ${createHashElement(input.tx_hash, 'Input UTXO')}
+                    <div class="io-details">
+                      <div class="detail-row">
+                        <span class="detail-label">Amount</span>
+                        <span class="detail-value highlight">${formatAda(
+                          input.amount
+                        )} ₳</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            `
-              )
-              .join('')}
+              `
+                )
+                .join('')}
+            </div>
           </div>
 
-          <div class="outputs-section">
-            <h3 class="section-title">Outputs (${transaction.outputs})</h3>
-            ${transaction.utxos.outputs
-              .map(
-                (output) => `
-              <div class="utxo-item">
-                <div class="detail-row">
-                  <span class="detail-label">Address</span>
-                  <span class="detail-value address">${output.address}</span>
+          <div class="io-section outputs-section">
+            <div class="io-header">
+              <h3 class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M15 18l-6-6 6-6"/>
+                </svg>
+                Outputs (${transaction.outputs})
+              </h3>
+              <div class="io-total">${formatAda(
+                transaction.output_amount
+              )} ₳</div>
+            </div>
+            <div class="io-list">
+              ${transaction.utxos.outputs
+                .map(
+                  (output, index) => `
+                <div class="io-item">
+                  <div class="io-index">#${index + 1}</div>
+                  <div class="io-content">
+                    <div class="io-details">
+                      <div class="detail-row">
+                        <span class="detail-label">Address</span>
+                        <span class="detail-value address">${
+                          output.address
+                        }</span>
+                      </div>
+                      <div class="detail-row">
+                        <span class="detail-label">Amount</span>
+                        <span class="detail-value highlight">${formatAda(
+                          output.amount
+                        )} ₳</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="detail-row">
-                  <span class="detail-label">Amount</span>
-                  <span class="detail-value">${formatAda(
-                    output.amount
-                  )} ₳</span>
-                </div>
-              </div>
-            `
-              )
-              .join('')}
+              `
+                )
+                .join('')}
+            </div>
           </div>
         </div>
       </div>

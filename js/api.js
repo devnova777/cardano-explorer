@@ -103,3 +103,74 @@ async function handleApiError(response) {
 
   throw new Error(error.message || `HTTP error! status: ${response.status}`);
 }
+
+/**
+ * Performs a search across blocks, transactions, and addresses
+ * @param {string} query - Search query
+ * @returns {Promise<Object>} Search results
+ */
+export async function search(query) {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/blocks/search?q=${encodeURIComponent(query)}`
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      // Handle error response
+      const error = new Error(data.error || 'Search failed');
+      error.status = response.status;
+      throw error;
+    }
+
+    if (!data.success || !data.data) {
+      throw new Error('Invalid response format from server');
+    }
+
+    return data.data;
+  } catch (error) {
+    console.error('Search failed:', {
+      query,
+      status: error.status || 500,
+      message: error.message,
+      error,
+    });
+
+    // Map error messages to user-friendly versions
+    const errorMessages = {
+      'No block or transaction found':
+        'No results found for this hash. Please verify the hash and try again.',
+      'Invalid search format':
+        'Please enter a valid block hash, transaction hash, address, epoch number, or pool ID.',
+      'Search query too short': 'Please enter at least 3 characters to search.',
+      'Resource not found':
+        'No results found. Please try a different search term.',
+      'Invalid response format':
+        'Something went wrong. Please try again later.',
+    };
+
+    // Find matching error message or use a default
+    const friendlyMessage =
+      Object.entries(errorMessages).find(([key]) =>
+        error.message.includes(key)
+      )?.[1] || 'Search failed. Please try again.';
+
+    const enhancedError = new Error(friendlyMessage);
+    enhancedError.status = error.status || 500;
+    throw enhancedError;
+  }
+}
+
+/**
+ * Fetches details for a specific address
+ * @param {string} address - The address to look up
+ * @returns {Promise<Object>} Address details including balance and transactions
+ */
+export async function getAddressDetails(address) {
+  const response = await fetch(`${BASE_URL}/blocks/address/${address}`);
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+  return response.json();
+}

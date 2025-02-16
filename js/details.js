@@ -2,6 +2,7 @@ import {
   getBlockDetails,
   getBlockTransactions,
   getTransactionDetails,
+  search,
 } from './api.js';
 import {
   renderBlockDetails,
@@ -10,6 +11,7 @@ import {
   renderLoading,
   updateDetailType,
 } from './renderers/details.js';
+import { renderSearchResults } from './renderers/search.js';
 import { getElement } from './utils.js';
 
 // Constants
@@ -254,47 +256,97 @@ window.loadTransactionDetails = async function loadTransactionDetails(txHash) {
 };
 
 /**
+ * Handles search functionality
+ * @param {string} query - The search query
+ */
+async function handleSearch(query) {
+  if (!query || query.trim().length < 3) {
+    alert('Please enter at least 3 characters to search');
+    return;
+  }
+
+  try {
+    // Hide the details container and show the main content for search results
+    const detailsContainer = document.querySelector('.details-container');
+    if (detailsContainer) {
+      detailsContainer.style.display = 'none';
+    }
+
+    // Create main content div if it doesn't exist
+    let mainContent = document.getElementById('main-content');
+    if (!mainContent) {
+      mainContent = document.createElement('div');
+      mainContent.id = 'main-content';
+      document.querySelector('.container').appendChild(mainContent);
+    }
+
+    await renderSearchResults(query.trim());
+  } catch (error) {
+    console.error('Search error:', error);
+    renderError('Failed to perform search');
+  }
+}
+
+/**
+ * Sets up event listeners for the page
+ */
+function setupEventListeners() {
+  // Add search event listeners
+  const searchInput = document.querySelector('.search-bar input');
+  const searchButton = document.querySelector('.search-btn');
+
+  if (searchInput && searchButton) {
+    // Handle search button click
+    searchButton.addEventListener('click', () => {
+      handleSearch(searchInput.value);
+    });
+
+    // Handle enter key in search input
+    searchInput.addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') {
+        handleSearch(searchInput.value);
+      }
+    });
+  }
+}
+
+/**
  * Initializes the details page
  */
 async function initDetailsPage() {
   try {
-    const { hash, type } = getUrlParams();
+    setupEventListeners();
 
-    if (!hash) {
-      displayError('No hash provided');
-      return;
+    const { hash, type } = getUrlParams();
+    if (!hash || !type) {
+      throw new Error('Missing required URL parameters');
     }
 
-    displayLoading();
+    const detailsContent = getElement(DETAILS_CONTENT_ID);
+    if (!detailsContent) {
+      throw new Error('Details content element not found');
+    }
 
-    if (type === 'transaction') {
-      const response = await getTransactionDetails(hash);
-      if (!response?.data) {
-        throw new Error('Invalid response data');
-      }
-      displayTransactionDetails(response.data);
-    } else {
-      const response = await getBlockDetails(hash);
-      if (!response?.data) {
-        throw new Error('Invalid response data');
-      }
-      displayBlockDetails(response.data);
+    renderLoading(detailsContent);
+
+    switch (type) {
+      case 'block':
+        await loadBlockDetails(hash);
+        break;
+      case 'transaction':
+        await loadTransactionDetails(hash);
+        break;
+      default:
+        throw new Error(`Unsupported detail type: ${type}`);
     }
   } catch (error) {
     console.error('Error initializing details page:', error);
-    displayError(error.message || 'Failed to load details');
+    renderError(error.message);
   }
 }
 
 // Initialize the page when the DOM is loaded
 document.addEventListener('DOMContentLoaded', initDetailsPage);
 
-// Export functions for testing or reuse
-export {
-  getUrlParams,
-  displayBlockDetails,
-  displayTransactionDetails,
-  displayError,
-  displayLoading,
-  initDetailsPage,
-};
+// Export functions for testing
+export { initDetailsPage, getUrlParams, setupEventListeners, handleSearch };

@@ -7,12 +7,11 @@ import { dirname } from 'path';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 
-// Import routes
+// Import routes and middleware
 import blockRoutes from './routes/blocks.js';
-
-// Import middleware
-import { validateApiConfig } from './middleware/errorHandler.js';
-import { errorHandler } from './middleware/errorHandler.js';
+import { getTransactionDetails } from './services/blockfrost.js';
+import { validateApiConfig, errorHandler } from './middleware/errorHandler.js';
+import { asyncHandler } from './middleware/asyncHandler.js';
 
 // Load env vars in development
 if (process.env.NODE_ENV !== 'production') {
@@ -37,7 +36,20 @@ const limiter = rateLimit({
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        scriptSrcAttr: ["'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        fontSrc: ["'self'", 'data:'],
+      },
+    },
+  })
+);
 app.use(limiter);
 app.use(express.static(rootDir));
 
@@ -51,8 +63,24 @@ app.use((req, res, next) => {
   next();
 });
 
+// Create a separate router for transactions
+const txRouter = express.Router();
+txRouter.get(
+  '/:hash',
+  asyncHandler(async (req, res) => {
+    console.log('TX Router hit:', req.params);
+    const { hash } = req.params;
+    const data = await getTransactionDetails(hash);
+    res.json({
+      success: true,
+      data,
+    });
+  })
+);
+
 // Mount routes
 app.use('/api/blocks', blockRoutes);
+app.use('/api/tx', txRouter);
 
 // Debug endpoint
 if (process.env.NODE_ENV !== 'production') {

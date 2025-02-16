@@ -3,6 +3,7 @@ import {
   getBlocks,
   getBlockDetails,
   getBlockTransactions,
+  search,
 } from './api.js';
 import {
   displayLatestBlock,
@@ -13,6 +14,7 @@ import {
   displayLoading,
 } from './ui.js';
 import { getElement } from './utils.js';
+import { renderSearchResults } from './renderers/search.js';
 
 // Constants
 const REFRESH_INTERVAL = 20000; // 20 seconds
@@ -22,6 +24,9 @@ const ELEMENTS = {
   BLOCK_CONTENT: 'block-content',
   FETCH_BLOCK: 'fetch-block',
   AUTO_REFRESH: 'auto-refresh',
+  SEARCH_INPUT: 'search-input',
+  SEARCH_BUTTON: 'search-btn',
+  MAIN_CONTENT: 'main-content',
 };
 
 // Application state
@@ -163,6 +168,38 @@ window.loadBlockDetails = function loadBlockDetails(blockHash) {
 };
 
 /**
+ * Handles search functionality
+ * @param {string} query - The search query
+ */
+async function handleSearch(query) {
+  if (!query || query.trim().length < 3) {
+    alert('Please enter at least 3 characters to search');
+    return;
+  }
+
+  try {
+    // Hide the explorer grid and show the main content for search results
+    const explorerGrid = document.querySelector('.explorer-grid');
+    if (explorerGrid) {
+      explorerGrid.style.display = 'none';
+    }
+
+    // Create main content div if it doesn't exist
+    let mainContent = document.getElementById(ELEMENTS.MAIN_CONTENT);
+    if (!mainContent) {
+      mainContent = document.createElement('div');
+      mainContent.id = ELEMENTS.MAIN_CONTENT;
+      document.querySelector('.container').appendChild(mainContent);
+    }
+
+    await renderSearchResults(query.trim());
+  } catch (error) {
+    console.error('Search error:', error);
+    displayError('Failed to perform search', ELEMENTS.MAIN_CONTENT);
+  }
+}
+
+/**
  * Sets up event listeners for the application
  */
 function setupEventListeners() {
@@ -178,6 +215,24 @@ function setupEventListeners() {
         stopAutoRefresh();
       } else {
         startAutoRefresh();
+      }
+    });
+  }
+
+  // Add search event listeners
+  const searchInput = document.querySelector('.search-bar input');
+  const searchButton = document.querySelector('.search-btn');
+
+  if (searchInput && searchButton) {
+    // Handle search button click
+    searchButton.addEventListener('click', () => {
+      handleSearch(searchInput.value);
+    });
+
+    // Handle enter key in search input
+    searchInput.addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') {
+        handleSearch(searchInput.value);
       }
     });
   }
