@@ -1,3 +1,17 @@
+/**
+ * Blockfrost API Service
+ *
+ * Handles all Blockfrost API interactions:
+ * - Block data retrieval
+ * - Transaction processing
+ * - Address information
+ * - Search functionality
+ * - UTXO management
+ * - Stake and pool operations
+ *
+ * @module services/blockfrost
+ */
+
 import fetch from 'node-fetch';
 import { APIError } from '../utils/APIError.js';
 
@@ -59,19 +73,24 @@ async function fetchFromBlockfrost(endpoint, options = {}) {
   }
 }
 
+const calculateAmount = (items) =>
+  items
+    .reduce((sum, item) => {
+      const lovelace = item.amount.find((a) => a.unit === 'lovelace');
+      return sum + (lovelace ? BigInt(lovelace.quantity) : BigInt(0));
+    }, BigInt(0))
+    .toString();
+
 /**
  * Gets the latest block
  */
-export async function getLatestBlock() {
-  return fetchFromBlockfrost('/blocks/latest');
-}
+export const getLatestBlock = () => fetchFromBlockfrost('/blocks/latest');
 
 /**
  * Gets previous blocks from a specific block hash
  */
-export async function getPreviousBlocks(hash, count) {
-  return fetchFromBlockfrost(`/blocks/${hash}/previous?count=${count}`);
-}
+export const getPreviousBlocks = (hash, count) =>
+  fetchFromBlockfrost(`/blocks/${hash}/previous?count=${count}`);
 
 /**
  * Gets block details by hash
@@ -116,18 +135,8 @@ export async function getBlockTransactions(hash) {
         block_time: blockData.time,
         inputs: utxoData.inputs.length,
         outputs: utxoData.outputs.length,
-        input_amount: utxoData.inputs
-          .reduce((sum, input) => {
-            const lovelace = input.amount.find((a) => a.unit === 'lovelace');
-            return sum + (lovelace ? BigInt(lovelace.quantity) : BigInt(0));
-          }, BigInt(0))
-          .toString(),
-        output_amount: utxoData.outputs
-          .reduce((sum, output) => {
-            const lovelace = output.amount.find((a) => a.unit === 'lovelace');
-            return sum + (lovelace ? BigInt(lovelace.quantity) : BigInt(0));
-          }, BigInt(0))
-          .toString(),
+        input_amount: calculateAmount(utxoData.inputs),
+        output_amount: calculateAmount(utxoData.outputs),
         fees: txData.fees,
       };
     })
@@ -174,19 +183,8 @@ export async function getTransactionDetails(hash) {
     const utxoData = await fetchFromBlockfrost(`/txs/${hash}/utxos`);
 
     // Calculate total input/output amounts
-    const input_amount = utxoData.inputs
-      .reduce((sum, input) => {
-        const lovelace = input.amount.find((a) => a.unit === 'lovelace');
-        return sum + (lovelace ? BigInt(lovelace.quantity) : BigInt(0));
-      }, BigInt(0))
-      .toString();
-
-    const output_amount = utxoData.outputs
-      .reduce((sum, output) => {
-        const lovelace = output.amount.find((a) => a.unit === 'lovelace');
-        return sum + (lovelace ? BigInt(lovelace.quantity) : BigInt(0));
-      }, BigInt(0))
-      .toString();
+    const input_amount = calculateAmount(utxoData.inputs);
+    const output_amount = calculateAmount(utxoData.outputs);
 
     // Get block data for timestamp
     const blockData = await fetchFromBlockfrost(

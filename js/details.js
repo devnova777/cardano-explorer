@@ -1,3 +1,15 @@
+/**
+ * Details Page Controller
+ *
+ * Manages the block and transaction details page functionality including:
+ * - Loading and displaying block/transaction details
+ * - Managing UI state and event listeners
+ * - Handling search functionality
+ * - Copy to clipboard operations
+ *
+ * @module details
+ */
+
 import {
   getBlockDetails,
   getBlockTransactions,
@@ -14,35 +26,48 @@ import {
 import { renderSearchResults } from './renderers/search.js';
 import { getElement } from './utils.js';
 
-// Constants
-const DETAILS_CONTENT_ID = 'details-content';
-const DETAIL_TYPE_CLASS = '.detail-type';
+const UI = {
+  SELECTORS: {
+    DETAILS_CONTENT: 'details-content',
+    DETAIL_TYPE: '.detail-type',
+    SEARCH_INPUT: '.search-bar input',
+    SEARCH_BUTTON: '.search-btn',
+    DETAILS_CONTAINER: '.details-container',
+    MAIN_CONTENT: '#main-content',
+    CONTAINER: '.container',
+  },
+  MINIMUM_SEARCH_LENGTH: 3,
+};
+
+const copyToClipboard = async (btn, hash) => {
+  try {
+    await navigator.clipboard.writeText(hash);
+    const originalTitle = btn.title;
+    btn.title = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.title = originalTitle;
+      btn.classList.remove('copied');
+    }, 2000);
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    btn.title = 'Failed to copy';
+  }
+};
+
+const setupCopyButtons = () => {
+  document.querySelectorAll('.copy-btn').forEach((btn) => {
+    btn.addEventListener('click', () => copyToClipboard(btn, btn.dataset.hash));
+  });
+};
 
 /**
  * Sets up event listeners for block details view
  * @param {Object} block - Block data
  * @param {boolean} hasTransactions - Whether transactions are being displayed
  */
-function setupBlockEventListeners(block, hasTransactions) {
-  // Copy button listeners
-  document.querySelectorAll('.copy-btn').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const hash = btn.dataset.hash;
-      try {
-        await navigator.clipboard.writeText(hash);
-        const originalTitle = btn.title;
-        btn.title = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(() => {
-          btn.title = originalTitle;
-          btn.classList.remove('copied');
-        }, 2000);
-      } catch (err) {
-        console.error('Failed to copy:', err);
-        btn.title = 'Failed to copy';
-      }
-    });
-  });
+const setupBlockEventListeners = (block, hasTransactions) => {
+  setupCopyButtons();
 
   if (hasTransactions) {
     // Back button listener
@@ -69,32 +94,14 @@ function setupBlockEventListeners(block, hasTransactions) {
       });
     }
   }
-}
+};
 
 /**
  * Sets up event listeners for transaction details view
  * @param {Object} transaction - Transaction data
  */
-function setupTransactionEventListeners(transaction) {
-  // Copy button listeners
-  document.querySelectorAll('.copy-btn').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const hash = btn.dataset.hash;
-      try {
-        await navigator.clipboard.writeText(hash);
-        const originalTitle = btn.title;
-        btn.title = 'Copied!';
-        btn.classList.add('copied');
-        setTimeout(() => {
-          btn.title = originalTitle;
-          btn.classList.remove('copied');
-        }, 2000);
-      } catch (err) {
-        console.error('Failed to copy:', err);
-        btn.title = 'Failed to copy';
-      }
-    });
-  });
+const setupTransactionEventListeners = (transaction) => {
+  setupCopyButtons();
 
   // Back button listener
   const backBtn = document.getElementById('back-to-transactions');
@@ -103,13 +110,13 @@ function setupTransactionEventListeners(transaction) {
       window.loadBlockTransactions(transaction.block);
     });
   }
-}
+};
 
 /**
  * Extracts URL parameters for block details
  * @returns {{hash: string|null, type: string|null}} URL parameters
  */
-function getUrlParams() {
+const getUrlParams = () => {
   try {
     const params = new URLSearchParams(window.location.search);
     return {
@@ -120,21 +127,21 @@ function getUrlParams() {
     console.error('Error parsing URL parameters:', error);
     return { hash: null, type: null };
   }
-}
+};
 
 /**
  * Displays block details in the UI
  * @param {Object} block - Block data to display
  * @param {Array} [transactions] - Optional array of transaction data
  */
-function displayBlockDetails(block, transactions = null) {
+const displayBlockDetails = (block, transactions = null) => {
   try {
     if (!block) {
       throw new Error('Invalid block data');
     }
 
-    const detailsContent = getElement(DETAILS_CONTENT_ID);
-    const detailType = document.querySelector(DETAIL_TYPE_CLASS);
+    const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
+    const detailType = document.querySelector(UI.SELECTORS.DETAIL_TYPE);
 
     if (!detailType) {
       console.warn('Detail type element not found');
@@ -148,20 +155,20 @@ function displayBlockDetails(block, transactions = null) {
     console.error('Error displaying block details:', error);
     displayError('Failed to display block details');
   }
-}
+};
 
 /**
  * Displays transaction details in the UI
  * @param {Object} transaction - Transaction data to display
  */
-function displayTransactionDetails(transaction) {
+const displayTransactionDetails = (transaction) => {
   try {
     if (!transaction) {
       throw new Error('Invalid transaction data');
     }
 
-    const detailsContent = getElement(DETAILS_CONTENT_ID);
-    const detailType = document.querySelector(DETAIL_TYPE_CLASS);
+    const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
+    const detailType = document.querySelector(UI.SELECTORS.DETAIL_TYPE);
 
     if (detailType) {
       detailType.textContent = `Transaction Details`;
@@ -173,42 +180,59 @@ function displayTransactionDetails(transaction) {
     console.error('Error displaying transaction details:', error);
     displayError('Failed to display transaction details');
   }
-}
+};
 
 /**
  * Displays error message in the UI
  * @param {string} message - Error message to display
  */
-function displayError(message) {
-  const detailsContent = getElement(DETAILS_CONTENT_ID);
+const displayError = (message) => {
+  const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
   detailsContent.innerHTML = renderError(message);
-}
+};
 
 /**
  * Displays loading state in the UI
  */
-function displayLoading() {
-  const detailsContent = getElement(DETAILS_CONTENT_ID);
+const displayLoading = () => {
+  const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
   detailsContent.innerHTML = renderLoading();
-}
+};
+
+const validateBlockData = (blockData) => {
+  if (!blockData) throw new Error('No block data received');
+  if (!blockData.hash || !blockData.height)
+    throw new Error('Invalid block data structure');
+  return blockData;
+};
+
+const validateTransactionData = (txData) => {
+  if (!txData) throw new Error('No transaction data received');
+  if (!txData.hash || !txData.block)
+    throw new Error('Invalid transaction data structure');
+  return txData;
+};
 
 /**
  * Loads block details
  * @param {string} blockHash - Hash of the block to load
  */
-window.loadBlockDetails = async function loadBlockDetails(blockHash) {
+window.loadBlockDetails = async (blockHash) => {
   try {
+    if (!blockHash) throw new Error('Block hash is required');
+
     displayLoading();
     const blockData = await getBlockDetails(blockHash);
+    const validatedData = validateBlockData(blockData);
 
-    if (!blockData) {
-      throw new Error('No block data received');
-    }
-
-    displayBlockDetails(blockData);
+    displayBlockDetails(validatedData);
   } catch (error) {
     console.error('Error loading block details:', error);
-    displayError(error.message || 'Failed to load block details');
+    displayError(
+      error.message === 'Invalid block data structure'
+        ? 'The block data appears to be corrupted. Please try again.'
+        : 'Failed to load block details'
+    );
   }
 };
 
@@ -216,22 +240,27 @@ window.loadBlockDetails = async function loadBlockDetails(blockHash) {
  * Loads block transactions
  * @param {string} blockHash - Hash of the block
  */
-window.loadBlockTransactions = async function loadBlockTransactions(blockHash) {
+window.loadBlockTransactions = async (blockHash) => {
   try {
+    if (!blockHash) throw new Error('Block hash is required');
+
     displayLoading();
     const [blockData, txData] = await Promise.all([
       getBlockDetails(blockHash),
       getBlockTransactions(blockHash),
     ]);
 
-    if (!blockData || !txData?.transactions) {
-      throw new Error('Invalid block or transaction data');
-    }
+    const validatedBlock = validateBlockData(blockData);
+    if (!txData?.transactions) throw new Error('Invalid transaction list data');
 
-    displayBlockDetails(blockData, txData.transactions);
+    displayBlockDetails(validatedBlock, txData.transactions);
   } catch (error) {
     console.error('Error loading block transactions:', error);
-    displayError(error.message || 'Failed to load block transactions');
+    displayError(
+      error.message.includes('Invalid')
+        ? 'The transaction data appears to be corrupted. Please try again.'
+        : 'Failed to load block transactions'
+    );
   }
 };
 
@@ -239,19 +268,22 @@ window.loadBlockTransactions = async function loadBlockTransactions(blockHash) {
  * Loads transaction details
  * @param {string} txHash - Hash of the transaction
  */
-window.loadTransactionDetails = async function loadTransactionDetails(txHash) {
+window.loadTransactionDetails = async (txHash) => {
   try {
+    if (!txHash) throw new Error('Transaction hash is required');
+
     displayLoading();
     const txData = await getTransactionDetails(txHash);
+    const validatedData = validateTransactionData(txData);
 
-    if (!txData) {
-      throw new Error('No transaction data received');
-    }
-
-    displayTransactionDetails(txData);
+    displayTransactionDetails(validatedData);
   } catch (error) {
     console.error('Error loading transaction details:', error);
-    displayError(error.message || 'Failed to load transaction details');
+    displayError(
+      error.message.includes('Invalid')
+        ? 'The transaction data appears to be corrupted. Please try again.'
+        : 'Failed to load transaction details'
+    );
   }
 };
 
@@ -259,41 +291,45 @@ window.loadTransactionDetails = async function loadTransactionDetails(txHash) {
  * Handles search functionality
  * @param {string} query - The search query
  */
-async function handleSearch(query) {
-  if (!query || query.trim().length < 3) {
-    alert('Please enter at least 3 characters to search');
+const handleSearch = async (query) => {
+  if (!query?.trim() || query.trim().length < UI.MINIMUM_SEARCH_LENGTH) {
+    alert(
+      `Please enter at least ${UI.MINIMUM_SEARCH_LENGTH} characters to search`
+    );
     return;
   }
 
   try {
     // Hide the details container and show the main content for search results
-    const detailsContainer = document.querySelector('.details-container');
+    const detailsContainer = document.querySelector(
+      UI.SELECTORS.DETAILS_CONTAINER
+    );
     if (detailsContainer) {
       detailsContainer.style.display = 'none';
     }
 
     // Create main content div if it doesn't exist
-    let mainContent = document.getElementById('main-content');
+    let mainContent = document.querySelector(UI.SELECTORS.MAIN_CONTENT);
     if (!mainContent) {
       mainContent = document.createElement('div');
       mainContent.id = 'main-content';
-      document.querySelector('.container').appendChild(mainContent);
+      document.querySelector(UI.SELECTORS.CONTAINER).appendChild(mainContent);
     }
 
     await renderSearchResults(query.trim());
   } catch (error) {
     console.error('Search error:', error);
-    renderError('Failed to perform search');
+    displayError('Failed to perform search');
   }
-}
+};
 
 /**
  * Sets up event listeners for the page
  */
-function setupEventListeners() {
+const setupEventListeners = () => {
   // Add search event listeners
-  const searchInput = document.querySelector('.search-bar input');
-  const searchButton = document.querySelector('.search-btn');
+  const searchInput = document.querySelector(UI.SELECTORS.SEARCH_INPUT);
+  const searchButton = document.querySelector(UI.SELECTORS.SEARCH_BUTTON);
 
   if (searchInput && searchButton) {
     // Handle search button click
@@ -308,42 +344,51 @@ function setupEventListeners() {
       }
     });
   }
-}
+};
 
 /**
  * Initializes the details page
  */
-async function initDetailsPage() {
+const initDetailsPage = async () => {
   try {
     setupEventListeners();
 
     const { hash, type } = getUrlParams();
     if (!hash || !type) {
-      throw new Error('Missing required URL parameters');
+      throw new Error(
+        'Missing required URL parameters: hash and type are required'
+      );
     }
 
-    const detailsContent = getElement(DETAILS_CONTENT_ID);
+    const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
     if (!detailsContent) {
-      throw new Error('Details content element not found');
+      throw new Error('Details content element not found in the DOM');
     }
 
-    renderLoading(detailsContent);
+    displayLoading();
 
-    switch (type) {
-      case 'block':
-        await loadBlockDetails(hash);
-        break;
-      case 'transaction':
-        await loadTransactionDetails(hash);
-        break;
-      default:
-        throw new Error(`Unsupported detail type: ${type}`);
+    const loaders = {
+      block: () => window.loadBlockDetails(hash),
+      transaction: () => window.loadTransactionDetails(hash),
+    };
+
+    const loader = loaders[type];
+    if (!loader) {
+      throw new Error(
+        `Unsupported detail type: ${type}. Supported types are: block, transaction`
+      );
     }
+
+    await loader();
   } catch (error) {
     console.error('Error initializing details page:', error);
-    renderError(error.message);
+    displayError(
+      error.message.includes('URL parameters')
+        ? 'Invalid page URL. Please check the address and try again.'
+        : error.message
+    );
   }
-}
+};
 
 // Initialize the page when the DOM is loaded
 document.addEventListener('DOMContentLoaded', initDetailsPage);

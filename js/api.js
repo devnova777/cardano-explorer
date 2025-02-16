@@ -1,19 +1,93 @@
 /**
- * API Client for Cardano Block Explorer
- * Handles all API communications with the backend server
+ * Cardano Block Explorer API Client
+ *
+ * Provides a centralized interface for all API communications with the backend server.
+ * Implements consistent error handling and response normalization.
+ *
+ * Features:
+ * - Unified error handling and mapping
+ * - Response normalization
+ * - Automatic query parameter handling
+ * - Type-safe endpoint definitions
+ *
+ * @module api
  */
 
-const BASE_URL = '/api';
+const API_CONFIG = {
+  BASE_URL: '/api',
+  DEFAULT_PAGE_SIZE: 10,
+  ENDPOINTS: {
+    LATEST_BLOCK: '/blocks/latest',
+    BLOCK_DETAILS: (hash) => `/blocks/${hash}`,
+    BLOCK_TRANSACTIONS: (hash) => `/blocks/${hash}/transactions`,
+    BLOCKS_LIST: '/blocks',
+    TRANSACTION_DETAILS: (hash) => `/blocks/tx/${hash}`,
+    SEARCH: '/blocks/search',
+    ADDRESS_DETAILS: (address) => `/blocks/address/${address}`,
+  },
+};
 
-/**
- * Generic API request handler with error handling
- * @param {string} endpoint - API endpoint to call
- * @param {Object} options - Fetch options
- * @returns {Promise<Object>} Response data
- */
+const ERROR_MESSAGES = {
+  'No block or transaction found':
+    'No results found for this hash. Please verify the hash and try again.',
+  'Invalid search format':
+    'Please enter a valid block hash, transaction hash, address, epoch number, or pool ID.',
+  'Search query too short': 'Please enter at least 3 characters to search.',
+  'Resource not found': 'No results found. Please try a different search term.',
+  'Invalid response format': 'Something went wrong. Please try again later.',
+  'Network error':
+    'Unable to connect to the server. Please check your internet connection.',
+  'Server error': 'The server encountered an error. Please try again later.',
+  default: 'An unexpected error occurred. Please try again.',
+};
+
+const createQueryString = (params = {}) => {
+  const query = new URLSearchParams(
+    Object.entries(params)
+      .filter(([_, value]) => value !== undefined)
+      .map(([key, value]) => [key, String(value)])
+  );
+  return query.toString() ? `?${query}` : '';
+};
+
+const normalizeResponse = (data) => {
+  if (data.success === false) {
+    throw new Error(data.error || 'API request failed');
+  }
+  return data.success ? data.data : data;
+};
+
+const getFriendlyErrorMessage = (error) => {
+  const matchedMessage = Object.entries(ERROR_MESSAGES).find(([key]) =>
+    error.message.includes(key)
+  )?.[1];
+  return matchedMessage || ERROR_MESSAGES.default;
+};
+
+const handleApiError = (error, endpoint) => {
+  console.error('API request failed:', {
+    endpoint,
+    status: error.status || 500,
+    message: error.message,
+    error,
+  });
+
+  const enhancedError = new Error(getFriendlyErrorMessage(error));
+  enhancedError.status = error.status || 500;
+  enhancedError.originalError = error;
+  throw enhancedError;
+};
+
 async function apiRequest(endpoint, options = {}) {
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, options);
+    const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
+      headers: {
+        Accept: 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    });
+
     const data = await response.json();
 
     if (!response.ok) {
@@ -22,112 +96,54 @@ async function apiRequest(endpoint, options = {}) {
       throw error;
     }
 
-    // Handle both wrapped and unwrapped response formats
-    if (data.success === false) {
-      throw new Error(data.error || 'API request failed');
-    }
-
-    // Return the data directly if it's unwrapped, or data.data if it's wrapped
-    return data.success ? data.data : data;
+    return normalizeResponse(data);
   } catch (error) {
-    console.error('API request failed:', {
-      endpoint,
-      status: error.status || 500,
-      message: error.message,
-      error,
-    });
-    throw error;
+    handleApiError(error, endpoint);
   }
 }
 
-/**
- * Fetches the latest block from the Cardano blockchain
- * @returns {Promise<Object>} Latest block data
- */
 export async function getLatestBlock() {
-  return apiRequest('/blocks/latest');
+  return apiRequest(API_CONFIG.ENDPOINTS.LATEST_BLOCK);
 }
 
-/**
- * Fetches details for a specific block
- * @param {string} hash - The block hash
- * @returns {Promise<Object>} Block details
- */
 export async function getBlockDetails(hash) {
-  return apiRequest(`/blocks/${hash}`);
+  return apiRequest(API_CONFIG.ENDPOINTS.BLOCK_DETAILS(hash));
 }
 
-/**
- * Fetches transactions for a specific block
- * @param {string} blockHash - The block hash
- * @param {number} [page=1] - Page number for pagination
- * @param {number} [limit=10] - Number of items per page
- * @returns {Promise<Object>} Block transactions
- */
-export async function getBlockTransactions(blockHash, page = 1, limit = 10) {
+export async function getBlockTransactions(
+  blockHash,
+  page = 1,
+  limit = API_CONFIG.DEFAULT_PAGE_SIZE
+) {
+  const query = createQueryString({ page, limit });
   return apiRequest(
-    `/blocks/${blockHash}/transactions?page=${page}&limit=${limit}`
+    `${API_CONFIG.ENDPOINTS.BLOCK_TRANSACTIONS(blockHash)}${query}`
   );
 }
 
-/**
- * Fetches a list of blocks with pagination
- * @param {number} [page=1] - Page number for pagination
- * @param {number} [limit=10] - Number of items per page
- * @returns {Promise<Object>} List of blocks
- */
-export async function getBlocks(page = 1, limit = 10) {
-  return apiRequest(`/blocks?page=${page}&limit=${limit}`);
+export async function getBlocks(
+  page = 1,
+  limit = API_CONFIG.DEFAULT_PAGE_SIZE
+) {
+  const query = createQueryString({ page, limit });
+  return apiRequest(`${API_CONFIG.ENDPOINTS.BLOCKS_LIST}${query}`);
 }
 
-/**
- * Fetches details for a specific transaction
- * @param {string} txHash - The transaction hash
- * @returns {Promise<Object>} Transaction details
- */
 export async function getTransactionDetails(txHash) {
-  return apiRequest(`/blocks/tx/${txHash}`);
+  return apiRequest(API_CONFIG.ENDPOINTS.TRANSACTION_DETAILS(txHash));
 }
 
-/**
- * Performs a search across blocks, transactions, and addresses
- * @param {string} query - Search query
- * @returns {Promise<Object>} Search results
- */
 export async function search(query) {
   try {
-    return await apiRequest(`/blocks/search?q=${encodeURIComponent(query)}`);
+    const endpoint = `${API_CONFIG.ENDPOINTS.SEARCH}${createQueryString({
+      q: query,
+    })}`;
+    return await apiRequest(endpoint);
   } catch (error) {
-    // Map error messages to user-friendly versions
-    const errorMessages = {
-      'No block or transaction found':
-        'No results found for this hash. Please verify the hash and try again.',
-      'Invalid search format':
-        'Please enter a valid block hash, transaction hash, address, epoch number, or pool ID.',
-      'Search query too short': 'Please enter at least 3 characters to search.',
-      'Resource not found':
-        'No results found. Please try a different search term.',
-      'Invalid response format':
-        'Something went wrong. Please try again later.',
-    };
-
-    // Find matching error message or use a default
-    const friendlyMessage =
-      Object.entries(errorMessages).find(([key]) =>
-        error.message.includes(key)
-      )?.[1] || 'Search failed. Please try again.';
-
-    const enhancedError = new Error(friendlyMessage);
-    enhancedError.status = error.status || 500;
-    throw enhancedError;
+    handleApiError(error, 'search');
   }
 }
 
-/**
- * Fetches details for a specific address
- * @param {string} address - The address to look up
- * @returns {Promise<Object>} Address details including balance and transactions
- */
 export async function getAddressDetails(address) {
-  return apiRequest(`/blocks/address/${address}`);
+  return apiRequest(API_CONFIG.ENDPOINTS.ADDRESS_DETAILS(address));
 }

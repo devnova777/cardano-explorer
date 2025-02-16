@@ -1,14 +1,20 @@
-import {
-  getLatestBlock,
-  getBlocks,
-  getBlockDetails,
-  getBlockTransactions,
-  search,
-} from './api.js';
+/**
+ * Main Application Controller
+ *
+ * Manages the main explorer page functionality including:
+ * - Latest block updates and auto-refresh
+ * - Block list pagination
+ * - Search functionality
+ * - Navigation to block details
+ * - UI state management
+ *
+ * @module main
+ */
+
+import { getLatestBlock, getBlocks, getBlockTransactions } from './api.js';
 import {
   displayLatestBlock,
   displayBlockList,
-  displayBlock,
   displayTransactions,
   displayError,
   displayLoading,
@@ -18,74 +24,100 @@ import {
 import { getElement } from './utils.js';
 import { renderSearchResults } from './renderers/search.js';
 
-// Constants
-const REFRESH_INTERVAL = 20000; // 20 seconds
-const ELEMENTS = {
-  LATEST_BLOCK: 'latest-block-info',
-  BLOCK_LIST: 'block-list',
-  CONTENT: 'block-content',
-  FETCH_BLOCK: 'fetch-block',
-  AUTO_REFRESH: 'auto-refresh',
-  SEARCH_INPUT: 'search-input',
-  SEARCH_BUTTON: 'search-btn',
-  MAIN_CONTENT: 'main-content',
+const CONFIG = {
+  REFRESH_INTERVAL: 20000, // 20 seconds
+  MIN_SEARCH_LENGTH: 3,
+  ELEMENTS: {
+    LATEST_BLOCK: 'latest-block-info',
+    BLOCK_LIST: 'block-list',
+    CONTENT: 'block-content',
+    FETCH_BLOCK: 'fetch-block',
+    AUTO_REFRESH: 'auto-refresh',
+    SEARCH_INPUT: 'search-input',
+    SEARCH_BUTTON: 'search-btn',
+    MAIN_CONTENT: 'main-content',
+    EXPLORER_GRID: '.explorer-grid',
+    CONTAINER: '.container',
+    SEARCH_BAR: '.search-bar input',
+  },
 };
 
-// Application state
-let autoRefreshInterval = null;
-let currentBlockHash = null;
+class ExplorerState {
+  constructor() {
+    this.autoRefreshInterval = null;
+    this.currentBlockHash = null;
+  }
 
-// Add this at the top of the file
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('CSS loaded:', document.styleSheets);
-  // This will help us verify if and how the stylesheets are loading
-  Array.from(document.styleSheets).forEach((sheet, index) => {
-    console.log(`Stylesheet ${index}:`, {
-      href: sheet.href,
-      rules: sheet.cssRules?.length || 'Not accessible (CORS)',
-      disabled: sheet.disabled,
-    });
-  });
-});
+  setCurrentBlock(hash) {
+    this.currentBlockHash = hash;
+  }
 
-/**
- * Fetches and displays the latest block
- */
+  clearCurrentBlock() {
+    this.currentBlockHash = null;
+  }
+}
+
+const state = new ExplorerState();
+
+const validateBlockData = (block, context = 'block') => {
+  if (!block) throw new Error(`No ${context} data received from API`);
+  if (!block.hash || !block.height) {
+    console.error(`Invalid ${context} data structure:`, block);
+    throw new Error(`Invalid ${context} data structure received`);
+  }
+  return block;
+};
+
+const validateTransactionData = (txData) => {
+  if (!txData) throw new Error('No transaction data received from API');
+  if (!txData.transactions || !Array.isArray(txData.transactions)) {
+    console.error('Invalid transaction data structure:', txData);
+    throw new Error('Invalid transaction data structure received');
+  }
+  return txData;
+};
+
+const autoRefresh = {
+  start() {
+    if (!state.autoRefreshInterval) {
+      state.autoRefreshInterval = setInterval(
+        window.fetchLatestBlock,
+        CONFIG.REFRESH_INTERVAL
+      );
+      const btn = getElement(CONFIG.ELEMENTS.AUTO_REFRESH);
+      if (btn) btn.textContent = 'Stop Auto-Refresh';
+    }
+  },
+
+  stop() {
+    if (state.autoRefreshInterval) {
+      clearInterval(state.autoRefreshInterval);
+      state.autoRefreshInterval = null;
+      const btn = getElement(CONFIG.ELEMENTS.AUTO_REFRESH);
+      if (btn) btn.textContent = 'Start Auto-Refresh';
+    }
+  },
+
+  toggle() {
+    state.autoRefreshInterval ? this.stop() : this.start();
+  },
+};
+
 window.fetchLatestBlock = async function fetchLatestBlock() {
   try {
-    displayLoading(ELEMENTS.LATEST_BLOCK);
+    displayLoading(CONFIG.ELEMENTS.LATEST_BLOCK);
     const block = await getLatestBlock();
-
-    console.log('Latest block response:', block); // Debug log
-
-    if (!block) {
-      throw new Error('No block data received from API');
-    }
-
-    if (!block.hash || !block.height) {
-      console.error('Invalid block data structure:', block); // Debug log
-      throw new Error('Invalid block data structure received');
-    }
-
-    // Only update the latest block display
-    displayLatestBlock(block);
+    const validatedBlock = validateBlockData(block, 'latest block');
+    displayLatestBlock(validatedBlock);
   } catch (error) {
-    console.error('Error fetching latest block:', {
-      error,
-      message: error.message,
-      stack: error.stack,
-    });
+    console.error('Error fetching latest block:', { error });
     displayError(
-      'Failed to fetch block data: ' + error.message,
-      ELEMENTS.LATEST_BLOCK
+      `Failed to fetch latest block: ${error.message}`,
+      CONFIG.ELEMENTS.LATEST_BLOCK
     );
   }
 };
 
-/**
- * Loads and displays transactions for a specific block
- * @param {string} blockHash - The block hash to load transactions for
- */
 window.loadBlockTransactions = async function loadBlockTransactions(blockHash) {
   if (!blockHash) {
     console.error('Block hash is required');
@@ -93,115 +125,46 @@ window.loadBlockTransactions = async function loadBlockTransactions(blockHash) {
   }
 
   try {
-    displayLoading(ELEMENTS.BLOCK_LIST);
-    currentBlockHash = blockHash;
+    displayLoading(CONFIG.ELEMENTS.BLOCK_LIST);
+    state.setCurrentBlock(blockHash);
     const txData = await getBlockTransactions(blockHash);
-
-    console.log('Transaction data response:', txData); // Debug log
-
-    if (!txData) {
-      throw new Error('No transaction data received from API');
-    }
-
-    if (!txData.transactions || !Array.isArray(txData.transactions)) {
-      console.error('Invalid transaction data structure:', txData); // Debug log
-      throw new Error('Invalid transaction data structure received');
-    }
-
-    displayTransactions(txData);
+    const validatedData = validateTransactionData(txData);
+    displayTransactions(validatedData);
   } catch (error) {
-    console.error('Error loading transactions:', {
-      error,
-      blockHash,
-      message: error.message,
-      stack: error.stack,
-    });
+    console.error('Error loading transactions:', { error, blockHash });
     displayError(
-      'Failed to load transactions: ' + error.message,
-      ELEMENTS.BLOCK_LIST
+      `Failed to load transactions: ${error.message}`,
+      CONFIG.ELEMENTS.BLOCK_LIST
     );
   }
 };
 
-/**
- * Clears current block selection and refreshes latest block
- */
 window.clearBlockSelection = function clearBlockSelection() {
-  currentBlockHash = null;
+  state.clearCurrentBlock();
   hideBlockContent();
   window.fetchLatestBlock();
 };
 
-/**
- * Starts auto-refresh of latest block
- */
-function startAutoRefresh() {
-  if (!autoRefreshInterval) {
-    autoRefreshInterval = setInterval(
-      window.fetchLatestBlock,
-      REFRESH_INTERVAL
-    );
-    const autoRefreshBtn = getElement(ELEMENTS.AUTO_REFRESH);
-    if (autoRefreshBtn) {
-      autoRefreshBtn.textContent = 'Stop Auto-Refresh';
-    }
-  }
-}
-
-/**
- * Stops auto-refresh of latest block
- */
-function stopAutoRefresh() {
-  if (autoRefreshInterval) {
-    clearInterval(autoRefreshInterval);
-    autoRefreshInterval = null;
-    const autoRefreshBtn = getElement(ELEMENTS.AUTO_REFRESH);
-    if (autoRefreshBtn) {
-      autoRefreshBtn.textContent = 'Start Auto-Refresh';
-    }
-  }
-}
-
-/**
- * Loads and displays block list
- * @param {number} page - Page number to load
- */
 window.loadBlockList = async function loadBlockList(page = 1) {
   try {
-    displayLoading(ELEMENTS.BLOCK_LIST);
+    displayLoading(CONFIG.ELEMENTS.BLOCK_LIST);
     hideBlockContent();
     const blockData = await getBlocks(page);
 
-    console.log('Block list response:', blockData); // Debug log
-
-    if (!blockData) {
-      throw new Error('No block list data received from API');
-    }
-
-    if (!blockData.blocks || !Array.isArray(blockData.blocks)) {
-      console.error('Invalid block list data structure:', blockData); // Debug log
+    if (!blockData?.blocks || !Array.isArray(blockData.blocks)) {
       throw new Error('Invalid block list data structure received');
     }
 
     displayBlockList(blockData);
   } catch (error) {
-    console.error('Error loading block list:', {
-      error,
-      page,
-      message: error.message,
-      stack: error.stack,
-    });
+    console.error('Error loading block list:', { error, page });
     displayError(
-      'Failed to load block list: ' + error.message,
-      ELEMENTS.BLOCK_LIST
+      `Failed to load block list: ${error.message}`,
+      CONFIG.ELEMENTS.BLOCK_LIST
     );
   }
 };
 
-/**
- * Navigates to block details page
- * @param {string} blockHash - Hash of the block to view
- */
 window.loadBlockDetails = function loadBlockDetails(blockHash) {
   if (!blockHash) {
     console.error('Block hash is required');
@@ -210,105 +173,71 @@ window.loadBlockDetails = function loadBlockDetails(blockHash) {
   window.location.href = `pages/details.html?hash=${blockHash}&type=block`;
 };
 
-/**
- * Handles search functionality
- * @param {string} query - The search query
- */
-async function handleSearch(query) {
-  if (!query || query.trim().length < 3) {
-    alert('Please enter at least 3 characters to search');
+const handleSearch = async (query) => {
+  if (!query?.trim() || query.trim().length < CONFIG.MIN_SEARCH_LENGTH) {
+    alert(
+      `Please enter at least ${CONFIG.MIN_SEARCH_LENGTH} characters to search`
+    );
     return;
   }
 
   try {
-    // Hide the explorer grid and show the main content for search results
-    const explorerGrid = document.querySelector('.explorer-grid');
-    if (explorerGrid) {
-      explorerGrid.style.display = 'none';
-    }
+    const explorerGrid = document.querySelector(CONFIG.ELEMENTS.EXPLORER_GRID);
+    if (explorerGrid) explorerGrid.style.display = 'none';
 
-    // Create main content div if it doesn't exist
-    let mainContent = document.getElementById(ELEMENTS.MAIN_CONTENT);
+    let mainContent = document.getElementById(CONFIG.ELEMENTS.MAIN_CONTENT);
     if (!mainContent) {
       mainContent = document.createElement('div');
-      mainContent.id = ELEMENTS.MAIN_CONTENT;
-      document.querySelector('.container').appendChild(mainContent);
+      mainContent.id = CONFIG.ELEMENTS.MAIN_CONTENT;
+      document
+        .querySelector(CONFIG.ELEMENTS.CONTAINER)
+        .appendChild(mainContent);
     }
 
     await renderSearchResults(query.trim());
   } catch (error) {
     console.error('Search error:', error);
-    displayError('Failed to perform search', ELEMENTS.MAIN_CONTENT);
+    displayError('Failed to perform search', CONFIG.ELEMENTS.MAIN_CONTENT);
   }
-}
+};
 
-/**
- * Sets up event listeners for the application
- */
-function setupEventListeners() {
-  const fetchBlockBtn = getElement(ELEMENTS.FETCH_BLOCK);
-  if (fetchBlockBtn) {
-    fetchBlockBtn.addEventListener('click', window.fetchLatestBlock);
-  }
+const setupEventListeners = () => {
+  const fetchBlockBtn = getElement(CONFIG.ELEMENTS.FETCH_BLOCK);
+  fetchBlockBtn?.addEventListener('click', window.fetchLatestBlock);
 
-  const autoRefreshBtn = getElement(ELEMENTS.AUTO_REFRESH);
-  if (autoRefreshBtn) {
-    autoRefreshBtn.addEventListener('click', () => {
-      if (autoRefreshInterval) {
-        stopAutoRefresh();
-      } else {
-        startAutoRefresh();
-      }
-    });
-  }
+  const autoRefreshBtn = getElement(CONFIG.ELEMENTS.AUTO_REFRESH);
+  autoRefreshBtn?.addEventListener('click', () => autoRefresh.toggle());
 
-  // Add search event listeners
-  const searchInput = document.querySelector('.search-bar input');
-  const searchButton = document.querySelector('.search-btn');
+  const searchInput = document.querySelector(CONFIG.ELEMENTS.SEARCH_BAR);
+  const searchButton = document.querySelector(CONFIG.ELEMENTS.SEARCH_BUTTON);
 
   if (searchInput && searchButton) {
-    // Handle search button click
-    searchButton.addEventListener('click', () => {
-      handleSearch(searchInput.value);
-    });
-
-    // Handle enter key in search input
+    searchButton.addEventListener('click', () =>
+      handleSearch(searchInput.value)
+    );
     searchInput.addEventListener('keypress', (event) => {
-      if (event.key === 'Enter') {
-        handleSearch(searchInput.value);
-      }
+      if (event.key === 'Enter') handleSearch(searchInput.value);
     });
   }
-}
+};
 
-/**
- * Initializes the application
- */
-async function initializeApp() {
+const initializeApp = async () => {
   try {
-    // Hide block content initially
     hideBlockContent();
-
-    // Initial load of latest block and block list
     await Promise.all([window.fetchLatestBlock(), window.loadBlockList()]);
-
-    startAutoRefresh();
+    autoRefresh.start();
     setupEventListeners();
   } catch (error) {
     console.error('Error initializing application:', error);
     displayError('Failed to initialize the application');
   }
-}
+};
 
-// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeApp);
 
-// Export functions for testing
 export {
-  startAutoRefresh,
-  stopAutoRefresh,
   initializeApp,
   setupEventListeners,
-  ELEMENTS,
-  REFRESH_INTERVAL,
+  CONFIG,
+  autoRefresh as refreshController,
 };

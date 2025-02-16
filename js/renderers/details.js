@@ -1,37 +1,50 @@
+/**
+ * Block and Transaction Details Renderer
+ *
+ * Responsible for rendering detailed views of blocks and transactions including:
+ * - Block summaries and transaction lists
+ * - Transaction details with inputs/outputs
+ * - Copyable hash elements
+ * - Loading and error states
+ *
+ * Dependencies:
+ * - formatDate: Formats timestamps
+ * - formatAda: Formats ADA amounts
+ *
+ * @module renderers/details
+ */
+
 import { formatDate, formatAda } from '../utils.js';
 
-/**
- * Creates a copyable hash element
- * @param {string} hash - Hash value to display
- * @param {string} label - Label for the hash
- * @returns {string} HTML for hash element with copy button
- */
-function createHashElement(hash, label) {
-  return `
-    <div class="hash-container">
-      <span class="hash-label">${label}</span>
-      <div class="hash-value-container">
-        <span class="hash-value" title="${hash}">${hash}</span>
-        <button class="copy-btn" data-hash="${hash}" title="Copy ${label}">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-        </button>
-      </div>
-    </div>
-  `;
-}
+const SVG_ICONS = {
+  copy: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+  </svg>`,
+  rightArrow: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M9 18l6-6-6-6"/>
+  </svg>`,
+  leftArrow: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M15 18l-6-6 6-6"/>
+  </svg>`,
+  checkmark: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M20 6L9 17l-5-5"/>
+  </svg>`,
+};
 
-/**
- * Renders a list of transactions
- * @param {Array} transactions - Array of transaction data
- * @returns {string} HTML for transaction list
- */
-function renderTransactionList(transactions) {
-  if (!transactions || transactions.length === 0) {
+const createHashElement = (hash, label) => `
+  <div class="hash-container">
+    <span class="hash-label">${label}</span>
+    <div class="hash-value-container">
+      <span class="hash-value" title="${hash}">${hash}</span>
+      <button class="copy-btn" data-hash="${hash}" title="Copy ${label}">${SVG_ICONS.copy}</button>
+    </div>
+  </div>
+`;
+
+const renderTransactionList = (transactions) => {
+  if (!transactions?.length)
     return '<div class="no-data">No transactions in this block</div>';
-  }
 
   const transactionItems = transactions
     .map(
@@ -39,28 +52,13 @@ function renderTransactionList(transactions) {
     <div class="transaction-item" data-tx-hash="${tx.hash}">
       ${createHashElement(tx.hash, 'Transaction Hash')}
       <div class="transaction-details">
-        <div class="detail-row">
-          <span class="detail-label">Time</span>
-          <span class="detail-value">${formatDate(tx.block_time)}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Input/Output Count</span>
-          <span class="detail-value">${tx.inputs}/${tx.outputs}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Total Output</span>
-          <span class="detail-value">${formatAda(tx.output_amount)} ₳</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label">Fees</span>
-          <span class="detail-value">${formatAda(tx.fees)} ₳</span>
-        </div>
+        ${renderDetailRow('Time', formatDate(tx.block_time))}
+        ${renderDetailRow('Input/Output Count', `${tx.inputs}/${tx.outputs}`)}
+        ${renderDetailRow('Total Output', `${formatAda(tx.output_amount)} ₳`)}
+        ${renderDetailRow('Fees', `${formatAda(tx.fees)} ₳`)}
       </div>
       <button class="view-tx-btn action-btn" data-tx-hash="${tx.hash}">
-        View Details
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M9 18l6-6-6-6"/>
-        </svg>
+        View Details ${SVG_ICONS.rightArrow}
       </button>
     </div>
   `
@@ -73,7 +71,62 @@ function renderTransactionList(transactions) {
       ${transactionItems}
     </div>
   `;
-}
+};
+
+const renderDetailRow = (label, value) => `
+  <div class="detail-row">
+    <span class="detail-label">${label}</span>
+    <span class="detail-value">${value}</span>
+  </div>
+`;
+
+const renderBlockSummary = (block) => `
+  <div class="block-summary">
+    <h3 class="section-title">Block Summary</h3>
+    ${renderDetailRow('Block Height', block.height.toLocaleString())}
+    ${createHashElement(block.hash, 'Block Hash')}
+    ${renderDetailRow('Slot', block.slot.toLocaleString())}
+    ${renderDetailRow('Time', formatDate(block.time))}
+    ${renderDetailRow(
+      'Transactions',
+      `${block.tx_count}${block.tx_count > 0 ? SVG_ICONS.rightArrow : ''}`
+    )}
+    ${renderDetailRow('Size', `${block.size.toLocaleString()} bytes`)}
+    ${renderDetailRow('Epoch', block.epoch)}
+    ${renderDetailRow('Fees', `${formatAda(block.fees)} ₳`)}
+  </div>
+`;
+
+const renderTransactionIO = (transaction) => `
+  <div class="transaction-io">
+    ${renderIOSection(
+      'Inputs',
+      transaction.utxos.inputs,
+      transaction.inputs,
+      transaction.input_amount
+    )}
+    ${renderIOSection(
+      'Outputs',
+      transaction.utxos.outputs,
+      transaction.outputs,
+      transaction.output_amount
+    )}
+  </div>
+`;
+
+const renderIOSection = (type, items, count, total) => `
+  <div class="io-section ${type.toLowerCase()}-section">
+    <div class="io-header">
+      <h3 class="section-title">${
+        SVG_ICONS[type === 'Inputs' ? 'rightArrow' : 'leftArrow']
+      } ${type} (${count})</h3>
+      <div class="io-total">${formatAda(total)} ₳</div>
+    </div>
+    <div class="io-list">
+      ${items.map((item, index) => renderIOItem(item, index, type)).join('')}
+    </div>
+  </div>
+`;
 
 /**
  * Renders detailed block information
@@ -114,46 +167,7 @@ export function renderBlockDetails(block, transactions = null) {
       <div class="block-details">
         <div class="block-summary">
           <h3 class="section-title">Block Summary</h3>
-          <div class="detail-row">
-            <span class="detail-label">Block Height</span>
-            <span class="detail-value">${block.height.toLocaleString()}</span>
-          </div>
-          ${createHashElement(block.hash, 'Block Hash')}
-          <div class="detail-row">
-            <span class="detail-label">Slot</span>
-            <span class="detail-value">${block.slot.toLocaleString()}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Time</span>
-            <span class="detail-value">${formatDate(block.time)}</span>
-          </div>
-          <div class="detail-row clickable" id="view-transactions">
-            <span class="detail-label">Transactions</span>
-            <span class="detail-value">
-              ${block.tx_count}
-              ${
-                block.tx_count > 0
-                  ? `
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M9 18l6-6-6-6"/>
-                </svg>
-              `
-                  : ''
-              }
-            </span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Size</span>
-            <span class="detail-value">${block.size.toLocaleString()} bytes</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Epoch</span>
-            <span class="detail-value">${block.epoch}</span>
-          </div>
-          <div class="detail-row">
-            <span class="detail-label">Fees</span>
-            <span class="detail-value">${formatAda(block.fees)} ₳</span>
-          </div>
+          ${renderBlockSummary(block)}
         </div>
       </div>
     `;
@@ -270,84 +284,7 @@ export function renderTransactionDetails(transaction) {
           </div>
         </div>
 
-        <div class="transaction-io">
-          <div class="io-section inputs-section">
-            <div class="io-header">
-              <h3 class="section-title">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M9 18l6-6-6-6"/>
-                </svg>
-                Inputs (${transaction.inputs})
-              </h3>
-              <div class="io-total">${formatAda(
-                transaction.input_amount
-              )} ₳</div>
-            </div>
-            <div class="io-list">
-              ${transaction.utxos.inputs
-                .map(
-                  (input, index) => `
-                <div class="io-item">
-                  <div class="io-index">#${index + 1}</div>
-                  <div class="io-content">
-                    ${createHashElement(input.tx_hash, 'Input UTXO')}
-                    <div class="io-details">
-                      <div class="detail-row">
-                        <span class="detail-label">Amount</span>
-                        <span class="detail-value highlight">${formatAda(
-                          input.amount
-                        )} ₳</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              `
-                )
-                .join('')}
-            </div>
-          </div>
-
-          <div class="io-section outputs-section">
-            <div class="io-header">
-              <h3 class="section-title">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M15 18l-6-6 6-6"/>
-                </svg>
-                Outputs (${transaction.outputs})
-              </h3>
-              <div class="io-total">${formatAda(
-                transaction.output_amount
-              )} ₳</div>
-            </div>
-            <div class="io-list">
-              ${transaction.utxos.outputs
-                .map(
-                  (output, index) => `
-                <div class="io-item">
-                  <div class="io-index">#${index + 1}</div>
-                  <div class="io-content">
-                    <div class="io-details">
-                      <div class="detail-row">
-                        <span class="detail-label">Address</span>
-                        <span class="detail-value address">${
-                          output.address
-                        }</span>
-                      </div>
-                      <div class="detail-row">
-                        <span class="detail-label">Amount</span>
-                        <span class="detail-value highlight">${formatAda(
-                          output.amount
-                        )} ₳</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              `
-                )
-                .join('')}
-            </div>
-          </div>
-        </div>
+        ${renderTransactionIO(transaction)}
       </div>
     `;
   } catch (error) {

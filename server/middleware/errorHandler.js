@@ -1,3 +1,15 @@
+/**
+ * Error Handler Middleware
+ *
+ * Provides error handling and API configuration validation:
+ * - Validates Blockfrost API key configuration
+ * - Handles API errors with appropriate status codes
+ * - Handles validation errors
+ * - Provides development-specific error details
+ *
+ * @module middleware/errorHandler
+ */
+
 import { APIError } from '../utils/APIError.js';
 
 /**

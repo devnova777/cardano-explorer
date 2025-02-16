@@ -1,3 +1,18 @@
+/**
+ * Blocks API Routes
+ *
+ * Handles all block-related API endpoints:
+ * - Latest block retrieval
+ * - Block list pagination
+ * - Block details by hash
+ * - Block transactions
+ * - Transaction details
+ * - Address details
+ * - Search functionality
+ *
+ * @module routes/blocks
+ */
+
 import express from 'express';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import {
