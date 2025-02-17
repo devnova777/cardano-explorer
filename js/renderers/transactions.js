@@ -61,59 +61,100 @@ export const renderTransactionList = (transactions) => {
  */
 export const renderTransactionIO = (transaction) => `
   <div class="transaction-io">
-    ${renderIOSection(
-      'Inputs',
-      transaction.utxos.inputs,
-      transaction.inputs,
-      transaction.input_amount
-    )}
-    ${renderIOSection(
-      'Outputs',
-      transaction.utxos.outputs,
-      transaction.outputs,
-      transaction.output_amount
-    )}
-  </div>
-`;
-
-const renderIOItem = (item, index, type) => {
-  const isInput = type === 'Inputs';
-  const amount = formatAda(item.amount);
-
-  return `
-    <div class="io-item">
-      <div class="io-item-header">
-        <span class="io-index">${index + 1}</span>
-        <span class="io-amount">${amount} ₳</span>
+    <div class="io-section inputs-section">
+      <div class="io-header">
+        <h3 class="section-title">
+          ${SVG_ICONS.rightArrow} Inputs (${transaction.utxos.inputs.length})
+        </h3>
+        <div class="io-total">${formatAda(transaction.input_amount)} ₳</div>
       </div>
-      <div class="io-item-details">
-        ${isInput ? renderInputSource(item) : ''}
-        <div class="io-address">
-          <span class="label">Address:</span>
-          <a href="${PATHS.DETAILS}?type=address&hash=${
-    item.address
-  }" class="address-link">
-            ${item.address}
-          </a>
-        </div>
-        ${renderAssets(item, isInput)}
+      <div class="io-list">
+        ${transaction.utxos.inputs
+          .map(
+            (item, index) => `
+          <div class="io-item">
+            <div class="io-index">#${index + 1}</div>
+            <div class="io-amount">${formatAda(item.amount)} ₳</div>
+            <div class="io-source">
+              <div class="io-item-details">
+                <span class="address-value">${item.address}</span>
+                <button class="copy-btn" data-hash="${
+                  item.address
+                }" title="Copy Address">
+                  ${SVG_ICONS.copy}
+                </button>
+              </div>
+              ${
+                item.tx_hash
+                  ? `
+                <div class="tx-details">
+                  <span class="tx-label">Tx Hash:</span>
+                  <span class="tx-hash">${item.tx_hash}</span>
+                  <button class="copy-btn" data-hash="${item.tx_hash}" title="Copy Transaction Hash">
+                    ${SVG_ICONS.copy}
+                  </button>
+                </div>
+              `
+                  : ''
+              }
+            </div>
+          </div>
+        `
+          )
+          .join('')}
       </div>
     </div>
-  `;
-};
-
-const renderInputSource = (item) => `
-  <div class="io-source">
-    <span class="label">From TX:</span>
-    <a href="${PATHS.TRANSACTION}?hash=${item.tx_hash}" class="hash-link">
-      ${item.tx_hash}
-    </a>
-    <span class="output-index">#${item.output_index}</span>
+    <div class="io-section outputs-section">
+      <div class="io-header">
+        <h3 class="section-title">
+          ${SVG_ICONS.leftArrow} Outputs (${transaction.utxos.outputs.length})
+        </h3>
+        <div class="io-total">${formatAda(transaction.output_amount)} ₳</div>
+      </div>
+      <div class="io-list">
+        ${transaction.utxos.outputs
+          .map(
+            (item, index) => `
+          <div class="io-item">
+            <div class="io-index">#${index + 1}</div>
+            <div class="io-amount">${formatAda(item.amount)} ₳</div>
+            <div class="io-source">
+              <div class="io-item-details">
+                <span class="address-value">${item.address}</span>
+                <button class="copy-btn" data-hash="${
+                  item.address
+                }" title="Copy Address">
+                  ${SVG_ICONS.copy}
+                </button>
+              </div>
+              ${
+                item.tx_hash
+                  ? `
+                <div class="tx-details">
+                  <span class="tx-label">Tx Hash:</span>
+                  <span class="tx-hash">${item.tx_hash}</span>
+                  <button class="copy-btn" data-hash="${item.tx_hash}" title="Copy Transaction Hash">
+                    ${SVG_ICONS.copy}
+                  </button>
+                </div>
+              `
+                  : ''
+              }
+            </div>
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+    </div>
   </div>
 `;
 
-const renderAssets = (item, isInput) => {
-  if (isInput || !item.assets?.length) return '';
+/**
+ * Renders asset information for outputs
+ */
+const renderAssets = (item) => {
+  if (!item.assets?.length) return '';
 
   return `
     <div class="io-assets">
@@ -135,48 +176,6 @@ const renderAssets = (item, isInput) => {
   `;
 };
 
-const renderIOSection = (type, items, count, total) => `
-  <div class="io-section ${type.toLowerCase()}-section">
-    <div class="io-header">
-      <h3 class="section-title">
-        ${
-          SVG_ICONS[type === 'Inputs' ? 'rightArrow' : 'leftArrow']
-        } ${type} (${count})
-      </h3>
-      <div class="io-total">${formatAda(total)} ₳</div>
-    </div>
-    <div class="io-list">
-      ${items.map((item, index) => renderIOItem(item, index, type)).join('')}
-    </div>
-  </div>
-`;
-
-const getBlockReference = (transaction) => {
-  const blockRef =
-    transaction.block_hash || transaction.block_height?.toString();
-  const blockHeight = transaction.block_height;
-
-  if (!blockRef || !blockHeight) {
-    throw new Error('Invalid transaction data: missing block reference');
-  }
-
-  const isValidHash = /^[0-9a-fA-F]{64}$/.test(blockRef);
-
-  return {
-    blockRef: isValidHash ? blockRef : blockHeight.toString(),
-    blockHeight,
-    isValidHash,
-  };
-};
-
-const calculateTransactionValues = (transaction) => ({
-  totalValue: formatAda(transaction.output_amount),
-  fee: formatAda(transaction.fees),
-  totalWithFees: formatAda(
-    (BigInt(transaction.output_amount) + BigInt(transaction.fees)).toString()
-  ),
-});
-
 /**
  * Renders transaction details
  * @param {Object} transaction - Transaction data
@@ -184,30 +183,20 @@ const calculateTransactionValues = (transaction) => ({
  */
 export const renderTransactionDetails = (transaction) => {
   try {
-    const { blockRef, blockHeight, isValidHash } =
-      getBlockReference(transaction);
-    const { totalValue, fee, totalWithFees } =
-      calculateTransactionValues(transaction);
+    const totalValue = formatAda(transaction.output_amount);
+    const fee = formatAda(transaction.fees);
+    const totalWithFees = formatAda(
+      (BigInt(transaction.output_amount) + BigInt(transaction.fees)).toString()
+    );
 
     return `
       <div class="transaction-content">
-        <div class="navigation-bar">
-          <a href="${PATHS.HOME}" class="action-btn" id="home-button">
-            ${SVG_ICONS.home}
-            Home
-          </a>
-          <button class="back-btn action-btn" id="back-to-block" 
-                  data-block-hash="${isValidHash ? blockRef : ''}"
-                  data-block-height="${blockHeight}">
-            ${SVG_ICONS.leftArrow}
-            Back to Block
-          </button>
-          <div class="detail-type">Transaction Details</div>
+        <div class="transaction-header">
+          ${createHashElement(transaction.hash, 'Transaction Hash')}
         </div>
         <div class="transaction-details">
-          ${createHashElement(transaction.hash, 'Transaction Hash')}
           <div class="transaction-summary">
-            <div class="summary-grid">
+            <div class="summary-row">
               <div class="summary-item">
                 <div class="summary-label">Status</div>
                 <div class="summary-value status-confirmed">
@@ -216,14 +205,8 @@ export const renderTransactionDetails = (transaction) => {
                 </div>
               </div>
               <div class="summary-item">
-                <div class="summary-label">Block</div>
-                <div class="summary-value">
-                  <span class="block-link" 
-                        data-block-hash="${isValidHash ? blockRef : ''}"
-                        data-block-height="${blockHeight}">
-                    #${blockHeight.toLocaleString()}
-                  </span>
-                </div>
+                <div class="summary-label">Block Height</div>
+                <div class="summary-value">#${transaction.block_height.toLocaleString()}</div>
               </div>
               <div class="summary-item">
                 <div class="summary-label">Timestamp</div>
@@ -231,6 +214,8 @@ export const renderTransactionDetails = (transaction) => {
                   transaction.block_time
                 )}</div>
               </div>
+            </div>
+            <div class="summary-row amounts">
               <div class="summary-item">
                 <div class="summary-label">Total Value</div>
                 <div class="summary-value highlight">${totalValue} ₳</div>
@@ -251,6 +236,6 @@ export const renderTransactionDetails = (transaction) => {
     `;
   } catch (error) {
     console.error('Error rendering transaction details:', error);
-    return renderError('Failed to render transaction details');
+    throw error;
   }
 };

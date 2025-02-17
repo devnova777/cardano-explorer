@@ -474,18 +474,42 @@ export async function search(query) {
 
 /**
  * Gets block details by height
+ * @param {number} height - Block height to fetch
+ * @returns {Promise<Object>} Block details
  */
 export async function getBlockByHeight(height) {
-  if (!height || height < 0) {
+  if (typeof height !== 'number' || height < 0) {
     throw new APIError('Invalid block height', 400);
   }
+
   try {
-    console.log('Fetching block by height:', height);
-    const block = await fetchFromBlockfrost(`/blocks/slot/${height}`);
-    return block;
+    console.log('Getting block by height:', height);
+
+    // First get the latest block to validate height range
+    const latestBlock = await getLatestBlock();
+    if (height > latestBlock.height) {
+      throw new APIError('Block height out of range', 404);
+    }
+
+    // Get block hash at this height from Blockfrost
+    const blockHashes = await fetchFromBlockfrost(`/blocks/height/${height}`);
+
+    // Blockfrost returns an array of block hashes for this endpoint
+    if (!Array.isArray(blockHashes) || blockHashes.length === 0) {
+      console.error('Invalid response from Blockfrost:', blockHashes);
+      throw new APIError('Block not found at this height', 404);
+    }
+
+    // Return the array of block hashes
+    // The client will use the first hash to get full block details
+    return blockHashes;
   } catch (error) {
+    console.error('Error getting block by height:', { height, error });
     if (error.status === 404) {
-      throw new APIError('Block not found', 404);
+      throw new APIError('Block not found at this height', 404);
+    }
+    if (error.status === 400) {
+      throw new APIError('Invalid block height', 400);
     }
     throw error;
   }

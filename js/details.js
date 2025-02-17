@@ -170,27 +170,31 @@ const displayLoading = () => {
 };
 
 const validateBlockData = (blockData) => {
-  if (!blockData) throw new Error('No block data received');
-  if (!blockData.hash || !blockData.height)
+  if (!blockData) {
+    throw new Error('No block data received');
+  }
+  if (!blockData.hash || !blockData.height) {
+    console.error('Invalid block data structure:', blockData);
     throw new Error('Invalid block data structure');
+  }
   return blockData;
 };
 
 /**
  * Loads and displays block details
- * @param {string} hash - The block hash
+ * @param {string} hashOrHeight - The block hash or height
  */
-window.loadBlockDetails = async (hash) => {
+window.loadBlockDetails = async (hashOrHeight) => {
   try {
     displayLoading();
-    const block = await getBlockDetails(hash);
+    const block = await getBlockDetails(hashOrHeight);
     validateBlockData(block);
     displayBlockDetails(block);
     // Update URL without reloading
-    history.pushState({}, '', `?type=block&hash=${hash}`);
+    history.pushState({}, '', `?type=block&hash=${block.hash}`);
   } catch (error) {
     console.error('Error loading block details:', error);
-    displayError(error.message);
+    displayError(error.message || 'Failed to load block details');
   }
 };
 

@@ -98,6 +98,50 @@ router.get(
   })
 );
 
+// Block height endpoint - Must come before /:hash to prevent conflicts
+router.get(
+  '/height/:height',
+  asyncHandler(async (req, res) => {
+    const { height } = req.params;
+    const heightNum = parseInt(height);
+
+    if (isNaN(heightNum) || heightNum < 0) {
+      throw new APIError('Invalid block height', 400);
+    }
+
+    try {
+      // Get latest block to validate height range
+      const latestBlock = await getLatestBlock();
+      if (heightNum > latestBlock.height) {
+        throw new APIError('Block height out of range', 404);
+      }
+
+      // Get block hash(es) for this height
+      const blockHashes = await getBlockByHeight(heightNum);
+
+      // If we got block hashes, return them
+      if (Array.isArray(blockHashes) && blockHashes.length > 0) {
+        res.json({ success: true, data: blockHashes });
+        return;
+      }
+
+      throw new APIError('Block not found at this height', 404);
+    } catch (error) {
+      console.error('Error getting block by height:', {
+        height: heightNum,
+        error,
+      });
+      if (error instanceof APIError) {
+        throw error;
+      }
+      throw new APIError(
+        error.message || 'Failed to get block by height',
+        error.status || 500
+      );
+    }
+  })
+);
+
 // Address details endpoint
 router.get(
   '/address/:address',
@@ -140,40 +184,17 @@ router.get(
   })
 );
 
-// Block by hash or height endpoint
+// Block by hash endpoint - Must come after all other specific endpoints
 router.get(
-  '/:hashOrHeight',
+  '/:hash',
+  validateHash,
   asyncHandler(async (req, res) => {
-    const { hashOrHeight } = req.params;
-    let block;
-
+    const { hash } = req.params;
     try {
-      // If it's a number, treat it as a height and get the block by height
-      if (!isNaN(hashOrHeight)) {
-        console.log('Looking up block by height:', hashOrHeight);
-        const height = parseInt(hashOrHeight);
-        const latestBlock = await getLatestBlock();
-
-        // Validate height is within range
-        if (height > latestBlock.height || height < 0) {
-          throw new APIError('Block height out of range', 404);
-        }
-
-        // Get block by hash from Blockfrost
-        const blocks = await getBlockByHeight(height);
-        if (!blocks) {
-          throw new APIError('Block not found', 404);
-        }
-        block = blocks;
-      } else {
-        // Otherwise treat it as a hash
-        console.log('Looking up block by hash:', hashOrHeight);
-        block = await getBlockByHash(hashOrHeight);
-      }
-
+      const block = await getBlockByHash(hash);
       res.json({ success: true, data: block });
     } catch (error) {
-      console.error('Error getting block:', error);
+      console.error('Error getting block by hash:', { hash, error });
       if (error.status === 404) {
         throw new APIError('Block not found', 404);
       }
