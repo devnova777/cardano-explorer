@@ -763,36 +763,49 @@ button {
 }
 
 .transaction-summary {
-  background: white;
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+  background: var(--cardano-blue-light);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
 }
 
-.summary-grid {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-}
-
-.summary-item {
+.summary-row {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.summary-row:last-child {
+  margin-bottom: 0;
+}
+
+.summary-row.amounts {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.summary-item {
+  background: white;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .summary-label {
-  font-size: 0.875rem;
   color: var(--text-gray);
+  font-size: 0.8rem;
   font-weight: 500;
 }
 
 .summary-value {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 500;
   color: var(--text-gray);
-  word-break: break-all;
+  word-break: break-word;
 }
 
 .summary-value.highlight {
@@ -801,10 +814,11 @@ button {
 }
 
 .status-confirmed {
+  color: #4caf50;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #4caf50;
+  font-size: 0.95rem;
 }
 
 .transaction-io {
@@ -833,14 +847,14 @@ button {
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
   color: var(--cardano-blue);
 }
 
 .io-total {
   font-weight: 600;
   color: var(--cardano-blue);
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
 }
 
 .io-list {
@@ -890,9 +904,9 @@ button {
 .address-label,
 .tx-label {
   color: var(--text-gray);
-  font-size: 0.85em;
+  font-size: clamp(0.75rem, 1.5vw, 0.85em);
   font-weight: 500;
-  min-width: 70px;
+  min-width: clamp(60px, 15vw, 70px);
   flex-shrink: 0;
 }
 
@@ -900,30 +914,30 @@ button {
 .tx-hash {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier,
     monospace;
-  font-size: 0.85em;
+  font-size: clamp(0.75rem, 1.5vw, 0.85em);
   color: var(--text-gray);
   overflow-wrap: break-word;
   word-wrap: break-word;
   word-break: break-all;
   flex: 1;
   min-width: 0;
-  max-width: calc(100% - 120px);
+  max-width: clamp(calc(100% - 140px), 70vw, calc(100% - 120px));
   line-height: 1.4;
 }
 
 .io-index {
   background: var(--cardano-blue);
   color: white;
-  padding: 0.25rem 0.75rem;
+  padding: clamp(0.2rem, 1vw, 0.25rem) clamp(0.5rem, 2vw, 0.75rem);
   border-radius: 4px;
-  font-size: 0.875rem;
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
   font-weight: 500;
 }
 
 .io-amount {
   font-weight: 600;
   color: var(--cardano-blue);
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
   white-space: nowrap;
 }
 
@@ -951,35 +965,30 @@ button {
 }
 
 @media (max-width: 768px) {
-  .io-item {
-    padding: 1rem;
-  }
-
-  .io-item-header {
-    gap: 0.75rem;
-  }
-
-  .io-address,
-  .io-tx-hash {
+  .transaction-summary {
     padding: 0.75rem;
   }
 
-  .address-label,
-  .tx-label {
-    width: 100%;
-    margin-bottom: 0.25rem;
+  .summary-row {
+    gap: 0.5rem;
   }
 
-  .address-value,
-  .tx-hash {
-    font-size: 0.8rem;
-    max-width: calc(100% - 40px);
+  .summary-item {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .transaction-summary {
+    padding: 0.625rem;
   }
 
-  .copy-btn {
-    width: 28px;
-    height: 28px;
-    padding: 0.35rem;
+  .summary-item {
+    padding: 0.625rem;
+  }
+
+  .summary-row {
+    gap: 0.375rem;
   }
 }
 
@@ -1268,15 +1277,15 @@ button {
 .transaction-summary {
   background: var(--cardano-blue-light);
   border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .summary-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .summary-row:last-child {
@@ -1284,32 +1293,36 @@ button {
 }
 
 .summary-row.amounts {
-  padding-top: 1rem;
+  padding-top: 0.75rem;
   border-top: 1px solid var(--border-color);
 }
 
 .summary-item {
   background: white;
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   border-radius: 4px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .summary-label {
   color: var(--text-gray);
-  font-size: 0.875rem;
-  margin-bottom: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 500;
 }
 
 .summary-value {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 500;
   color: var(--text-gray);
+  word-break: break-word;
 }
 
 .summary-value.highlight {
   color: var(--cardano-blue);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
 }
 
 .status-confirmed {
@@ -1317,6 +1330,7 @@ button {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-size: 0.95rem;
 }
 
 /* Transaction IO Layout */
@@ -1346,14 +1360,14 @@ button {
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
   color: var(--cardano-blue);
 }
 
 .io-total {
   font-weight: 600;
   color: var(--cardano-blue);
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
 }
 
 .io-list {
@@ -1403,9 +1417,9 @@ button {
 .address-label,
 .tx-label {
   color: var(--text-gray);
-  font-size: 0.85em;
+  font-size: clamp(0.75rem, 1.5vw, 0.85em);
   font-weight: 500;
-  min-width: 70px;
+  min-width: clamp(60px, 15vw, 70px);
   flex-shrink: 0;
 }
 
@@ -1413,30 +1427,30 @@ button {
 .tx-hash {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier,
     monospace;
-  font-size: 0.85em;
+  font-size: clamp(0.75rem, 1.5vw, 0.85em);
   color: var(--text-gray);
   overflow-wrap: break-word;
   word-wrap: break-word;
   word-break: break-all;
   flex: 1;
   min-width: 0;
-  max-width: calc(100% - 120px);
+  max-width: clamp(calc(100% - 140px), 70vw, calc(100% - 120px));
   line-height: 1.4;
 }
 
 .io-index {
   background: var(--cardano-blue);
   color: white;
-  padding: 0.25rem 0.75rem;
+  padding: clamp(0.2rem, 1vw, 0.25rem) clamp(0.5rem, 2vw, 0.75rem);
   border-radius: 4px;
-  font-size: 0.875rem;
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem);
   font-weight: 500;
 }
 
 .io-amount {
   font-weight: 600;
   color: var(--cardano-blue);
-  font-size: 1.1rem;
+  font-size: clamp(0.9rem, 2vw, 1.1rem);
   white-space: nowrap;
 }
 
