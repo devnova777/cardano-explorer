@@ -2,6 +2,28 @@
   "version": 2,
   "cleanUrls": true,
   "trailingSlash": false,
+ "builds": [
+   {
+     "src": "server/server.js",
+     "use": "@vercel/node"
+   },
+   {
+     "src": "**/*.html",
+     "use": "@vercel/static"
+   },
+   {
+     "src": "css/**",
+     "use": "@vercel/static"
+   },
+   {
+     "src": "js/**",
+     "use": "@vercel/static"
+   },
+   {
+     "src": "images/**",
+     "use": "@vercel/static"
+   }
+  ]
 
   "github": {
     "enabled": true,
