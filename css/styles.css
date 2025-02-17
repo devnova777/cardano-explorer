@@ -851,51 +851,64 @@ button {
 }
 
 .io-item {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  align-items: start;
-  gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   background: var(--cardano-blue-light);
   padding: 1rem 1.5rem;
   border-radius: 6px;
 }
 
-.io-source {
+.io-item-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.io-item-content {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  min-width: 0;
-}
-
-.io-item-details {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.tx-details {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
   padding-top: 0.5rem;
   border-top: 1px solid rgba(0, 0, 0, 0.1);
-  font-size: 0.9em;
+  max-width: 100%;
 }
 
+.io-address,
+.io-tx-hash {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+  background: white;
+  padding: 0.75rem;
+  border-radius: 4px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.address-label,
 .tx-label {
   color: var(--text-gray);
   font-size: 0.85em;
   font-weight: 500;
+  min-width: 70px;
+  flex-shrink: 0;
 }
 
+.address-value,
 .tx-hash {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier,
     monospace;
   font-size: 0.85em;
   color: var(--text-gray);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-all;
+  flex: 1;
+  min-width: 0;
+  max-width: calc(100% - 120px);
+  line-height: 1.4;
 }
 
 .io-index {
@@ -914,29 +927,13 @@ button {
   white-space: nowrap;
 }
 
-.io-address {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.address-value {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier,
-    monospace;
-  font-size: 0.9rem;
-  color: var(--text-gray);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .copy-btn {
   padding: 0.5rem;
   border-radius: 4px;
   cursor: pointer;
   opacity: 0.8;
   transition: all 0.2s ease;
-  background: white;
+  background: var(--cardano-blue-light);
   border: none;
   display: flex;
   align-items: center;
@@ -944,6 +941,7 @@ button {
   flex-shrink: 0;
   width: 32px;
   height: 32px;
+  margin-left: auto;
 }
 
 .copy-btn:hover {
@@ -952,40 +950,30 @@ button {
   background: var(--cardano-blue-light);
 }
 
-/* Mobile responsiveness */
 @media (max-width: 768px) {
-  .transaction-io {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
   .io-item {
-    grid-template-columns: auto 1fr;
-    grid-template-rows: auto 1fr;
+    padding: 1rem;
   }
 
-  .io-source {
-    grid-column: 1 / -1;
-    grid-row: 2;
+  .io-item-header {
+    gap: 0.75rem;
   }
 
-  .tx-details {
-    flex-wrap: wrap;
-    gap: 0.5rem;
+  .io-address,
+  .io-tx-hash {
+    padding: 0.75rem;
   }
 
-  .io-amount {
-    grid-column: 2;
-    grid-row: 1;
+  .address-label,
+  .tx-label {
+    width: 100%;
+    margin-bottom: 0.25rem;
   }
 
-  .io-address {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-
-  .address-value {
+  .address-value,
+  .tx-hash {
     font-size: 0.8rem;
+    max-width: calc(100% - 40px);
   }
 
   .copy-btn {
@@ -1376,51 +1364,64 @@ button {
 }
 
 .io-item {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  align-items: start;
-  gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   background: var(--cardano-blue-light);
   padding: 1rem 1.5rem;
   border-radius: 6px;
 }
 
-.io-source {
+.io-item-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.io-item-content {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  min-width: 0;
-}
-
-.io-item-details {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.tx-details {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
   padding-top: 0.5rem;
   border-top: 1px solid rgba(0, 0, 0, 0.1);
-  font-size: 0.9em;
+  max-width: 100%;
 }
 
+.io-address,
+.io-tx-hash {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+  background: white;
+  padding: 0.75rem;
+  border-radius: 4px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.address-label,
 .tx-label {
   color: var(--text-gray);
   font-size: 0.85em;
   font-weight: 500;
+  min-width: 70px;
+  flex-shrink: 0;
 }
 
+.address-value,
 .tx-hash {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier,
     monospace;
   font-size: 0.85em;
   color: var(--text-gray);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-all;
+  flex: 1;
+  min-width: 0;
+  max-width: calc(100% - 120px);
+  line-height: 1.4;
 }
 
 .io-index {
@@ -1439,29 +1440,13 @@ button {
   white-space: nowrap;
 }
 
-.io-address {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.address-value {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier,
-    monospace;
-  font-size: 0.9rem;
-  color: var(--text-gray);
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .copy-btn {
   padding: 0.5rem;
   border-radius: 4px;
   cursor: pointer;
   opacity: 0.8;
   transition: all 0.2s ease;
-  background: white;
+  background: var(--cardano-blue-light);
   border: none;
   display: flex;
   align-items: center;
@@ -1469,6 +1454,7 @@ button {
   flex-shrink: 0;
   width: 32px;
   height: 32px;
+  margin-left: auto;
 }
 
 .copy-btn:hover {
@@ -1485,32 +1471,28 @@ button {
   }
 
   .io-item {
-    grid-template-columns: auto 1fr;
-    grid-template-rows: auto 1fr;
+    padding: 1rem;
   }
 
-  .io-source {
-    grid-column: 1 / -1;
-    grid-row: 2;
+  .io-item-header {
+    gap: 0.75rem;
   }
 
-  .tx-details {
-    flex-wrap: wrap;
-    gap: 0.5rem;
+  .io-address,
+  .io-tx-hash {
+    padding: 0.75rem;
   }
 
-  .io-amount {
-    grid-column: 2;
-    grid-row: 1;
+  .address-label,
+  .tx-label {
+    width: 100%;
+    margin-bottom: 0.25rem;
   }
 
-  .io-address {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-
-  .address-value {
+  .address-value,
+  .tx-hash {
     font-size: 0.8rem;
+    max-width: calc(100% - 40px);
   }
 
   .copy-btn {

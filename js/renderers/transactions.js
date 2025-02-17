@@ -73,10 +73,13 @@ export const renderTransactionIO = (transaction) => `
           .map(
             (item, index) => `
           <div class="io-item">
-            <div class="io-index">#${index + 1}</div>
-            <div class="io-amount">${formatAda(item.amount)} ₳</div>
-            <div class="io-source">
-              <div class="io-item-details">
+            <div class="io-item-header">
+              <div class="io-index">#${index + 1}</div>
+              <div class="io-amount">${formatAda(item.amount)} ₳</div>
+            </div>
+            <div class="io-item-content">
+              <div class="io-address">
+                <span class="address-label">Address:</span>
                 <span class="address-value">${item.address}</span>
                 <button class="copy-btn" data-hash="${
                   item.address
@@ -87,7 +90,7 @@ export const renderTransactionIO = (transaction) => `
               ${
                 item.tx_hash
                   ? `
-                <div class="tx-details">
+                <div class="io-tx-hash">
                   <span class="tx-label">Tx Hash:</span>
                   <span class="tx-hash">${item.tx_hash}</span>
                   <button class="copy-btn" data-hash="${item.tx_hash}" title="Copy Transaction Hash">
@@ -116,10 +119,13 @@ export const renderTransactionIO = (transaction) => `
           .map(
             (item, index) => `
           <div class="io-item">
-            <div class="io-index">#${index + 1}</div>
-            <div class="io-amount">${formatAda(item.amount)} ₳</div>
-            <div class="io-source">
-              <div class="io-item-details">
+            <div class="io-item-header">
+              <div class="io-index">#${index + 1}</div>
+              <div class="io-amount">${formatAda(item.amount)} ₳</div>
+            </div>
+            <div class="io-item-content">
+              <div class="io-address">
+                <span class="address-label">Address:</span>
                 <span class="address-value">${item.address}</span>
                 <button class="copy-btn" data-hash="${
                   item.address
@@ -130,7 +136,7 @@ export const renderTransactionIO = (transaction) => `
               ${
                 item.tx_hash
                   ? `
-                <div class="tx-details">
+                <div class="io-tx-hash">
                   <span class="tx-label">Tx Hash:</span>
                   <span class="tx-hash">${item.tx_hash}</span>
                   <button class="copy-btn" data-hash="${item.tx_hash}" title="Copy Transaction Hash">
