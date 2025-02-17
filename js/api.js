@@ -80,25 +80,24 @@ const handleApiError = (error, endpoint) => {
 
 async function apiRequest(endpoint, options = {}) {
   try {
-    const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
-      headers: {
-        Accept: 'application/json',
-        ...options.headers,
-      },
-      ...options,
-    });
-
+    console.log('Making API request:', { endpoint, options });
+    const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, options);
     const data = await response.json();
+    console.log('API response:', { endpoint, status: response.status, data });
 
-    if (!response.ok) {
-      const error = new Error(data.error || 'API request failed');
-      error.status = response.status;
-      throw error;
+    if (!response.ok || !data.success) {
+      throw new Error(
+        data.error?.message ||
+          data.message ||
+          ERROR_MESSAGES[data.error?.code] ||
+          ERROR_MESSAGES.default
+      );
     }
 
-    return normalizeResponse(data);
+    return data.data;
   } catch (error) {
-    handleApiError(error, endpoint);
+    console.error('API request failed:', { endpoint, error });
+    throw new Error(error.message || ERROR_MESSAGES.default);
   }
 }
 
@@ -106,19 +105,18 @@ export async function getLatestBlock() {
   return apiRequest(API_CONFIG.ENDPOINTS.LATEST_BLOCK);
 }
 
-export async function getBlockDetails(hash) {
-  return apiRequest(API_CONFIG.ENDPOINTS.BLOCK_DETAILS(hash));
+export async function getBlockDetails(hashOrHeight) {
+  console.log('Getting block details for:', hashOrHeight);
+  return apiRequest(API_CONFIG.ENDPOINTS.BLOCK_DETAILS(hashOrHeight));
 }
 
-export async function getBlockTransactions(
-  blockHash,
-  page = 1,
-  limit = API_CONFIG.DEFAULT_PAGE_SIZE
-) {
-  const query = createQueryString({ page, limit });
-  return apiRequest(
-    `${API_CONFIG.ENDPOINTS.BLOCK_TRANSACTIONS(blockHash)}${query}`
+export async function getBlockTransactions(blockHash) {
+  console.log('Getting block transactions:', blockHash);
+  const data = await apiRequest(
+    API_CONFIG.ENDPOINTS.BLOCK_TRANSACTIONS(blockHash)
   );
+  console.log('Block transactions response:', data);
+  return data.transactions || [];
 }
 
 export async function getBlocks(
@@ -130,7 +128,12 @@ export async function getBlocks(
 }
 
 export async function getTransactionDetails(txHash) {
-  return apiRequest(API_CONFIG.ENDPOINTS.TRANSACTION_DETAILS(txHash));
+  console.log('Getting transaction details for:', txHash);
+  const data = await apiRequest(
+    API_CONFIG.ENDPOINTS.TRANSACTION_DETAILS(txHash)
+  );
+  console.log('Transaction details response:', JSON.stringify(data, null, 2));
+  return data;
 }
 
 export async function search(query) {

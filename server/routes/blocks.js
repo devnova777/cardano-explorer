@@ -23,6 +23,7 @@ import {
   getTransactionDetails,
   search,
   getAddressDetails,
+  getBlockByHeight,
 } from '../services/blockfrost.js';
 import { APIError } from '../utils/APIError.js';
 
@@ -139,14 +140,45 @@ router.get(
   })
 );
 
-// Block by hash endpoint (must be last as it's a catch-all)
+// Block by hash or height endpoint
 router.get(
-  '/:hash',
-  validateHash,
+  '/:hashOrHeight',
   asyncHandler(async (req, res) => {
-    const { hash } = req.params;
-    const block = await getBlockByHash(hash);
-    res.json({ success: true, data: block });
+    const { hashOrHeight } = req.params;
+    let block;
+
+    try {
+      // If it's a number, treat it as a height and get the block by height
+      if (!isNaN(hashOrHeight)) {
+        console.log('Looking up block by height:', hashOrHeight);
+        const height = parseInt(hashOrHeight);
+        const latestBlock = await getLatestBlock();
+
+        // Validate height is within range
+        if (height > latestBlock.height || height < 0) {
+          throw new APIError('Block height out of range', 404);
+        }
+
+        // Get block by hash from Blockfrost
+        const blocks = await getBlockByHeight(height);
+        if (!blocks) {
+          throw new APIError('Block not found', 404);
+        }
+        block = blocks;
+      } else {
+        // Otherwise treat it as a hash
+        console.log('Looking up block by hash:', hashOrHeight);
+        block = await getBlockByHash(hashOrHeight);
+      }
+
+      res.json({ success: true, data: block });
+    } catch (error) {
+      console.error('Error getting block:', error);
+      if (error.status === 404) {
+        throw new APIError('Block not found', 404);
+      }
+      throw error;
+    }
   })
 );
 

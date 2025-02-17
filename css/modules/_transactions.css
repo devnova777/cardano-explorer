@@ -214,3 +214,235 @@
     flex-wrap: wrap;
   }
 }
+
+.detail-row.clickable {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.detail-row.clickable:hover {
+  background-color: var(--hover-bg);
+}
+
+.detail-row.clickable:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: -2px;
+}
+
+.detail-row.clickable .detail-value {
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.detail-row.clickable:hover .detail-value {
+  color: var(--primary-color-dark);
+}
+
+/* Transaction IO Items */
+.io-section {
+  margin-top: var(--spacing-lg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.io-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background-color: var(--bg-light);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.io-total {
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.io-list {
+  padding: var(--spacing-md);
+}
+
+.io-item {
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+  background-color: var(--white);
+}
+
+.io-item:last-child {
+  margin-bottom: 0;
+}
+
+.io-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.io-index {
+  font-size: var(--text-sm);
+  color: var(--text-gray);
+  background-color: var(--bg-light);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+}
+
+.io-amount {
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+.io-item-details {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.io-source,
+.io-address,
+.io-assets {
+  display: grid;
+  gap: var(--spacing-xs);
+}
+
+.label {
+  font-size: var(--text-sm);
+  color: var(--text-gray);
+}
+
+.hash-link,
+.address-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  word-break: break-all;
+}
+
+.hash-link:hover,
+.address-link:hover {
+  color: var(--primary-color-dark);
+  text-decoration: underline;
+}
+
+.output-index {
+  font-size: var(--text-sm);
+  color: var(--text-gray);
+}
+
+.asset-list {
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.asset-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--spacing-sm);
+  align-items: center;
+  padding: var(--spacing-sm);
+  background-color: var(--bg-light);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.asset-policy {
+  color: var(--text-gray);
+}
+
+.asset-name {
+  color: var(--text-dark);
+}
+
+.asset-amount {
+  font-weight: 500;
+  color: var(--text-dark);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .io-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .asset-item {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Transaction Actions */
+.transaction-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.view-tx-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--cardano-blue);
+  color: var(--white);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.view-tx-btn:hover {
+  background-color: var(--cardano-blue-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.view-tx-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.view-tx-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+}
+
+/* Transaction Item */
+.transaction-item {
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background-color: var(--white);
+  margin-bottom: var(--spacing-md);
+  transition: all var(--transition-fast);
+}
+
+.transaction-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.transaction-item:last-child {
+  margin-bottom: 0;
+}
+
+.transaction-item .transaction-details {
+  margin-top: var(--spacing-md);
+}
+
+.transaction-item .hash-container {
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+}

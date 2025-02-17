@@ -36,40 +36,39 @@ const getHeaders = () => {
  */
 async function fetchFromBlockfrost(endpoint, options = {}) {
   try {
+    console.log('Fetching from Blockfrost:', endpoint);
     const response = await fetch(`${BLOCKFROST_URL}${endpoint}`, {
       ...options,
       headers: getHeaders(),
     });
 
     const data = await response.json();
+    console.log('Blockfrost response:', {
+      endpoint,
+      status: response.status,
+      data,
+    });
 
     if (!response.ok) {
       // Handle all Blockfrost error formats
       if (data.status_code || data.status === 'fail') {
         const statusCode = data.status_code || response.status;
         const message = data.message || 'Resource not found';
-
-        // Map common Blockfrost error messages to our standard format
-        if (message.includes('not been found') || statusCode === 404) {
-          throw new APIError('Resource not found', 404);
-        }
-
         throw new APIError(message, statusCode);
       }
-
-      throw new APIError(
-        `Blockfrost API error: ${response.statusText}`,
-        response.status
-      );
+      throw new APIError('Failed to fetch from Blockfrost', response.status);
     }
 
     return data;
   } catch (error) {
+    console.error('Blockfrost API error:', { endpoint, error });
     if (error instanceof APIError) {
       throw error;
     }
-    // Handle network or parsing errors
-    throw new APIError(`Blockfrost request failed: ${error.message}`, 500);
+    throw new APIError(
+      'Failed to communicate with Blockfrost API',
+      error.status || 500
+    );
   }
 }
 
@@ -118,31 +117,75 @@ export async function getBlockTransactions(hash) {
     throw new APIError('Invalid block hash', 400);
   }
 
-  const [blockData, txHashes] = await Promise.all([
-    fetchFromBlockfrost(`/blocks/${hash}`),
-    fetchFromBlockfrost(`/blocks/${hash}/txs?order=desc`),
-  ]);
+  console.log('Getting block transactions for hash:', hash);
 
-  const transactions = await Promise.all(
-    txHashes.map(async (txHash) => {
-      const [txData, utxoData] = await Promise.all([
-        fetchFromBlockfrost(`/txs/${txHash}`),
-        fetchFromBlockfrost(`/txs/${txHash}/utxos`),
-      ]);
+  try {
+    const [blockData, txHashes] = await Promise.all([
+      fetchFromBlockfrost(`/blocks/${hash}`),
+      fetchFromBlockfrost(`/blocks/${hash}/txs?order=desc`),
+    ]);
 
-      return {
-        hash: txHash,
-        block_time: blockData.time,
-        inputs: utxoData.inputs.length,
-        outputs: utxoData.outputs.length,
-        input_amount: calculateAmount(utxoData.inputs),
-        output_amount: calculateAmount(utxoData.outputs),
-        fees: txData.fees,
-      };
-    })
-  );
+    console.log('Block data and tx hashes:', {
+      blockTime: blockData.time,
+      txCount: txHashes?.length || 0,
+    });
 
-  return { transactions };
+    if (!Array.isArray(txHashes) || txHashes.length === 0) {
+      console.log('No transactions found for block');
+      return { transactions: [] };
+    }
+
+    // Limit to first 50 transactions for performance
+    const limitedTxHashes = txHashes.slice(0, 50);
+    console.log(`Processing ${limitedTxHashes.length} transactions`);
+
+    const transactions = await Promise.all(
+      limitedTxHashes.map(async (txHash) => {
+        try {
+          console.log('Fetching transaction details for:', txHash);
+          const [txData, utxoData] = await Promise.all([
+            fetchFromBlockfrost(`/txs/${txHash}`),
+            fetchFromBlockfrost(`/txs/${txHash}/utxos`),
+          ]);
+
+          const transaction = {
+            hash: txHash,
+            block: hash,
+            block_time: blockData.time,
+            inputs: utxoData.inputs?.length || 0,
+            outputs: utxoData.outputs?.length || 0,
+            input_amount: calculateAmount(utxoData.inputs || []),
+            output_amount: calculateAmount(utxoData.outputs || []),
+            fees: txData.fees || '0',
+          };
+
+          console.log('Processed transaction:', {
+            hash: txHash,
+            inputs: transaction.inputs,
+            outputs: transaction.outputs,
+          });
+
+          return transaction;
+        } catch (error) {
+          console.error('Error processing transaction:', { txHash, error });
+          // Skip failed transactions instead of failing the entire request
+          return null;
+        }
+      })
+    );
+
+    // Filter out any failed transactions
+    const validTransactions = transactions.filter((tx) => tx !== null);
+    console.log(
+      'Successfully processed transactions:',
+      validTransactions.length
+    );
+
+    return { transactions: validTransactions };
+  } catch (error) {
+    console.error('Error getting block transactions:', error);
+    throw error;
+  }
 }
 
 /**
@@ -176,11 +219,15 @@ export async function getTransactionDetails(hash) {
   }
 
   try {
+    console.log('Fetching transaction details for:', hash);
+
     // First check if transaction exists
     const txData = await fetchFromBlockfrost(`/txs/${hash}`);
+    console.log('Transaction data:', txData);
 
     // If we get here, transaction exists, now get UTXOs
     const utxoData = await fetchFromBlockfrost(`/txs/${hash}/utxos`);
+    console.log('UTXO data:', utxoData);
 
     // Calculate total input/output amounts
     const input_amount = calculateAmount(utxoData.inputs);
@@ -190,10 +237,11 @@ export async function getTransactionDetails(hash) {
     const blockData = await fetchFromBlockfrost(
       `/blocks/${txData.block_height}`
     );
+    console.log('Block data:', blockData);
 
-    return {
+    const transaction = {
       hash: hash,
-      block: txData.block_hash,
+      block_hash: txData.block_hash,
       block_height: txData.block_height,
       block_time: blockData.time,
       slot: txData.slot,
@@ -205,6 +253,8 @@ export async function getTransactionDetails(hash) {
       size: txData.size,
       invalid_before: txData.invalid_before,
       invalid_hereafter: txData.invalid_hereafter,
+      inputs: utxoData.inputs.length,
+      outputs: utxoData.outputs.length,
       utxos: {
         inputs: utxoData.inputs.map((input) => ({
           tx_hash: input.tx_hash,
@@ -220,10 +270,12 @@ export async function getTransactionDetails(hash) {
           assets: output.amount.filter((a) => a.unit !== 'lovelace'),
         })),
       },
-      inputs: utxoData.inputs.length,
-      outputs: utxoData.outputs.length,
     };
+
+    console.log('Processed transaction:', transaction);
+    return transaction;
   } catch (error) {
+    console.error('Error fetching transaction details:', error);
     if (
       error.status === 404 ||
       (error.status_code && error.status_code === 404)
@@ -418,4 +470,23 @@ export async function search(query) {
     'Invalid search format. Please enter a valid block hash, transaction hash, address, epoch number, or pool ID.',
     400
   );
+}
+
+/**
+ * Gets block details by height
+ */
+export async function getBlockByHeight(height) {
+  if (!height || height < 0) {
+    throw new APIError('Invalid block height', 400);
+  }
+  try {
+    console.log('Fetching block by height:', height);
+    const block = await fetchFromBlockfrost(`/blocks/slot/${height}`);
+    return block;
+  } catch (error) {
+    if (error.status === 404) {
+      throw new APIError('Block not found', 404);
+    }
+    throw error;
+  }
 }

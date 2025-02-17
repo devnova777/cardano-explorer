@@ -16,14 +16,10 @@ import {
   getTransactionDetails,
   search,
 } from './api.js';
-import {
-  renderBlockDetails,
-  renderTransactionDetails,
-  renderError,
-  renderLoading,
-  updateDetailType,
-} from './renderers/details.js';
+import { renderBlockDetails, updateDetailType } from './renderers/blocks.js';
+import { renderTransactionDetails } from './renderers/transactions.js';
 import { renderSearchResults } from './renderers/search.js';
+import { renderError, renderLoading } from './renderers/shared.js';
 import { getElement } from './utils.js';
 
 const UI = {
@@ -67,66 +63,65 @@ const setupCopyButtons = () => {
  * @param {boolean} hasTransactions - Whether transactions are being displayed
  */
 const setupBlockEventListeners = (block, hasTransactions) => {
+  console.log('Setting up block event listeners:', { block, hasTransactions });
   setupCopyButtons();
 
   if (hasTransactions) {
+    console.log('Setting up transaction listeners');
     // Back button listener
     const backBtn = document.getElementById('back-to-block');
     if (backBtn) {
-      backBtn.addEventListener('click', () => {
+      console.log('Found back button');
+      backBtn.addEventListener('click', (e) => {
+        console.log('Back button clicked');
+        e.preventDefault();
         window.loadBlockDetails(block.hash);
       });
     }
-
-    // Transaction item click listeners
-    document.querySelectorAll('.transaction-item').forEach((item) => {
-      item.addEventListener('click', () => {
-        const txHash = item.dataset.txHash;
-        window.loadTransactionDetails(txHash);
-      });
-    });
   } else {
-    // Transaction row click listener
+    console.log('Setting up transaction row listener');
     const txRow = document.getElementById('view-transactions');
     if (txRow && block.tx_count > 0) {
-      txRow.addEventListener('click', () => {
+      console.log('Found transaction row with transactions');
+
+      // Handle click event
+      txRow.addEventListener('click', (e) => {
+        console.log('Transaction row clicked');
+        e.preventDefault();
         window.loadBlockTransactions(block.hash);
       });
+
+      // Handle keyboard events for accessibility
+      txRow.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          console.log('Transaction row activated via keyboard');
+          e.preventDefault();
+          window.loadBlockTransactions(block.hash);
+        }
+      });
     }
-  }
-};
-
-/**
- * Sets up event listeners for transaction details view
- * @param {Object} transaction - Transaction data
- */
-const setupTransactionEventListeners = (transaction) => {
-  setupCopyButtons();
-
-  // Back button listener
-  const backBtn = document.getElementById('back-to-transactions');
-  if (backBtn) {
-    backBtn.addEventListener('click', () => {
-      window.loadBlockTransactions(transaction.block);
-    });
   }
 };
 
 /**
  * Extracts URL parameters for block details
- * @returns {{hash: string|null, type: string|null}} URL parameters
+ * @returns {{type: string, hash: string}} URL parameters
+ * @throws {Error} If parameters are missing or invalid
  */
 const getUrlParams = () => {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    return {
-      hash: params.get('hash'),
-      type: params.get('type'),
-    };
-  } catch (error) {
-    console.error('Error parsing URL parameters:', error);
-    return { hash: null, type: null };
+  const params = new URLSearchParams(window.location.search);
+  const type = params.get('type');
+  const hash = params.get('hash');
+
+  if (!type || !hash) {
+    throw new Error('Missing required URL parameters: type and hash');
   }
+
+  if (!['block', 'transaction'].includes(type)) {
+    throw new Error('Invalid type parameter. Must be "block" or "transaction"');
+  }
+
+  return { type, hash };
 };
 
 /**
@@ -158,31 +153,6 @@ const displayBlockDetails = (block, transactions = null) => {
 };
 
 /**
- * Displays transaction details in the UI
- * @param {Object} transaction - Transaction data to display
- */
-const displayTransactionDetails = (transaction) => {
-  try {
-    if (!transaction) {
-      throw new Error('Invalid transaction data');
-    }
-
-    const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
-    const detailType = document.querySelector(UI.SELECTORS.DETAIL_TYPE);
-
-    if (detailType) {
-      detailType.textContent = `Transaction Details`;
-    }
-
-    detailsContent.innerHTML = renderTransactionDetails(transaction);
-    setupTransactionEventListeners(transaction);
-  } catch (error) {
-    console.error('Error displaying transaction details:', error);
-    displayError('Failed to display transaction details');
-  }
-};
-
-/**
  * Displays error message in the UI
  * @param {string} message - Error message to display
  */
@@ -206,84 +176,62 @@ const validateBlockData = (blockData) => {
   return blockData;
 };
 
-const validateTransactionData = (txData) => {
-  if (!txData) throw new Error('No transaction data received');
-  if (!txData.hash || !txData.block)
-    throw new Error('Invalid transaction data structure');
-  return txData;
-};
-
 /**
- * Loads block details
- * @param {string} blockHash - Hash of the block to load
+ * Loads and displays block details
+ * @param {string} hash - The block hash
  */
-window.loadBlockDetails = async (blockHash) => {
+window.loadBlockDetails = async (hash) => {
   try {
-    if (!blockHash) throw new Error('Block hash is required');
-
     displayLoading();
-    const blockData = await getBlockDetails(blockHash);
-    const validatedData = validateBlockData(blockData);
-
-    displayBlockDetails(validatedData);
+    const block = await getBlockDetails(hash);
+    validateBlockData(block);
+    displayBlockDetails(block);
+    // Update URL without reloading
+    history.pushState({}, '', `?type=block&hash=${hash}`);
   } catch (error) {
     console.error('Error loading block details:', error);
-    displayError(
-      error.message === 'Invalid block data structure'
-        ? 'The block data appears to be corrupted. Please try again.'
-        : 'Failed to load block details'
-    );
+    displayError(error.message);
   }
 };
 
 /**
- * Loads block transactions
- * @param {string} blockHash - Hash of the block
+ * Loads and displays block transactions
+ * @param {string} hash - The block hash
  */
-window.loadBlockTransactions = async (blockHash) => {
+window.loadBlockTransactions = async (hash) => {
   try {
-    if (!blockHash) throw new Error('Block hash is required');
-
     displayLoading();
-    const [blockData, txData] = await Promise.all([
-      getBlockDetails(blockHash),
-      getBlockTransactions(blockHash),
+    const [block, transactions] = await Promise.all([
+      getBlockDetails(hash),
+      getBlockTransactions(hash),
     ]);
-
-    const validatedBlock = validateBlockData(blockData);
-    if (!txData?.transactions) throw new Error('Invalid transaction list data');
-
-    displayBlockDetails(validatedBlock, txData.transactions);
+    validateBlockData(block);
+    displayBlockDetails(block, transactions);
   } catch (error) {
     console.error('Error loading block transactions:', error);
-    displayError(
-      error.message.includes('Invalid')
-        ? 'The transaction data appears to be corrupted. Please try again.'
-        : 'Failed to load block transactions'
-    );
+    displayError(error.message);
   }
 };
 
 /**
- * Loads transaction details
- * @param {string} txHash - Hash of the transaction
+ * Loads and displays transaction details
+ * @param {string} hash - The transaction hash
  */
-window.loadTransactionDetails = async (txHash) => {
+window.loadTransactionDetails = async (hash) => {
   try {
-    if (!txHash) throw new Error('Transaction hash is required');
-
     displayLoading();
-    const txData = await getTransactionDetails(txHash);
-    const validatedData = validateTransactionData(txData);
-
-    displayTransactionDetails(validatedData);
+    const transaction = await getTransactionDetails(hash);
+    if (!transaction) {
+      throw new Error('No transaction data received');
+    }
+    const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
+    detailsContent.innerHTML = renderTransactionDetails(transaction);
+    setupCopyButtons();
+    // Update URL without reloading
+    history.pushState({}, '', `?type=transaction&hash=${hash}`);
   } catch (error) {
     console.error('Error loading transaction details:', error);
-    displayError(
-      error.message.includes('Invalid')
-        ? 'The transaction data appears to be corrupted. Please try again.'
-        : 'Failed to load transaction details'
-    );
+    displayError(error.message || 'Failed to load transaction details');
   }
 };
 
@@ -351,14 +299,11 @@ const setupEventListeners = () => {
  */
 const initDetailsPage = async () => {
   try {
+    console.log('Initializing details page');
     setupEventListeners();
 
-    const { hash, type } = getUrlParams();
-    if (!hash || !type) {
-      throw new Error(
-        'Missing required URL parameters: hash and type are required'
-      );
-    }
+    const params = getUrlParams();
+    console.log('URL params:', params);
 
     const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
     if (!detailsContent) {
@@ -366,32 +311,27 @@ const initDetailsPage = async () => {
     }
 
     displayLoading();
-
-    const loaders = {
-      block: () => window.loadBlockDetails(hash),
-      transaction: () => window.loadTransactionDetails(hash),
-    };
-
-    const loader = loaders[type];
-    if (!loader) {
-      throw new Error(
-        `Unsupported detail type: ${type}. Supported types are: block, transaction`
-      );
+    if (params.type === 'block') {
+      await window.loadBlockDetails(params.hash);
+    } else if (params.type === 'transaction') {
+      await window.loadTransactionDetails(params.hash);
     }
-
-    await loader();
+    console.log('Content loaded successfully');
   } catch (error) {
     console.error('Error initializing details page:', error);
     displayError(
-      error.message.includes('URL parameters')
-        ? 'Invalid page URL. Please check the address and try again.'
+      error.message.includes('URL parameter')
+        ? 'Please provide both a type (block/transaction) and hash in the URL.'
         : error.message
     );
   }
 };
 
 // Initialize the page when the DOM is loaded
-document.addEventListener('DOMContentLoaded', initDetailsPage);
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM loaded, initializing page');
+  initDetailsPage();
+});
 
 // Export functions for testing
 export { initDetailsPage, getUrlParams, setupEventListeners, handleSearch };

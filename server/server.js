@@ -73,7 +73,19 @@ app.use(cors());
 app.use(express.json());
 app.use(helmet(securityConfig));
 app.use(rateLimit(rateLimitConfig));
-app.use(express.static(rootDir));
+
+// Configure proper MIME types
+express.static.mime.define({ 'application/javascript': ['js'] });
+app.use(
+  express.static(rootDir, {
+    setHeaders: (res, path) => {
+      if (path.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      }
+    },
+  })
+);
+
 app.use('/api', validateApiConfig);
 app.use(requestLogger);
 

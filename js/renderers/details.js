@@ -82,15 +82,20 @@ const renderDetailRow = (label, value) => `
 
 const renderBlockSummary = (block) => `
   <div class="block-summary">
-    <h3 class="section-title">Block Summary</h3>
     ${renderDetailRow('Block Height', block.height.toLocaleString())}
     ${createHashElement(block.hash, 'Block Hash')}
     ${renderDetailRow('Slot', block.slot.toLocaleString())}
     ${renderDetailRow('Time', formatDate(block.time))}
-    ${renderDetailRow(
-      'Transactions',
-      `${block.tx_count}${block.tx_count > 0 ? SVG_ICONS.rightArrow : ''}`
-    )}
+    ${
+      block.tx_count > 0
+        ? `<div class="detail-row clickable" id="view-transactions" role="button" tabindex="0">
+            <span class="detail-label">Transactions</span>
+            <span class="detail-value">${block.tx_count.toLocaleString()} ${
+            SVG_ICONS.rightArrow
+          }</span>
+          </div>`
+        : renderDetailRow('Transactions', '0')
+    }
     ${renderDetailRow('Size', `${block.size.toLocaleString()} bytes`)}
     ${renderDetailRow('Epoch', block.epoch)}
     ${renderDetailRow('Fees', `${formatAda(block.fees)} ₳`)}
@@ -113,6 +118,62 @@ const renderTransactionIO = (transaction) => `
     )}
   </div>
 `;
+
+const renderIOItem = (item, index, type) => {
+  const isInput = type === 'Inputs';
+  const amount = formatAda(item.amount);
+
+  return `
+    <div class="io-item">
+      <div class="io-item-header">
+        <span class="io-index">${index + 1}</span>
+        <span class="io-amount">${amount} ₳</span>
+      </div>
+      <div class="io-item-details">
+        ${
+          isInput
+            ? `<div class="io-source">
+                <span class="label">From TX:</span>
+                <a href="?type=transaction&hash=${item.tx_hash}" class="hash-link">
+                  ${item.tx_hash}
+                </a>
+                <span class="output-index">#${item.output_index}</span>
+              </div>`
+            : ''
+        }
+        <div class="io-address">
+          <span class="label">Address:</span>
+          <a href="?type=address&hash=${item.address}" class="address-link">
+            ${item.address}
+          </a>
+        </div>
+        ${
+          !isInput && item.assets && item.assets.length > 0
+            ? `<div class="io-assets">
+                <span class="label">Assets:</span>
+                <div class="asset-list">
+                  ${item.assets
+                    .map(
+                      (asset) => `
+                    <div class="asset-item">
+                      <span class="asset-policy">${asset.unit.slice(
+                        0,
+                        56
+                      )}</span>
+                      <span class="asset-name">${asset.unit.slice(56)}</span>
+                      <span class="asset-amount">${asset.quantity}</span>
+                    </div>
+                  `
+                    )
+                    .join('')}
+                </div>
+              </div>`
+            : ''
+        }
+      </div>
+    </div>
+  `;
+};
 
 const renderIOSection = (type, items, count, total) => `
   <div class="io-section ${type.toLowerCase()}-section">
@@ -165,10 +226,8 @@ export function renderBlockDetails(block, transactions = null) {
     // Otherwise, render the block summary view
     return `
       <div class="block-details">
-        <div class="block-summary">
-          <h3 class="section-title">Block Summary</h3>
-          ${renderBlockSummary(block)}
-        </div>
+        <h3 class="section-title">Block Summary</h3>
+        ${renderBlockSummary(block)}
       </div>
     `;
   } catch (error) {
