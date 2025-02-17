@@ -1,0 +1,357 @@
+/* Utility Classes */
+
+/* Display */
+.hidden {
+  display: none !important;
+}
+
+.block {
+  display: block;
+}
+
+.inline {
+  display: inline;
+}
+
+.flex {
+  display: flex;
+}
+
+.inline-flex {
+  display: inline-flex;
+}
+
+.grid {
+  display: grid;
+}
+
+/* Flex Utilities */
+.flex-row {
+  flex-direction: row;
+}
+
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+/* Spacing */
+.m-0 {
+  margin: 0;
+}
+.mt-0 {
+  margin-top: 0;
+}
+.mr-0 {
+  margin-right: 0;
+}
+.mb-0 {
+  margin-bottom: 0;
+}
+.ml-0 {
+  margin-left: 0;
+}
+
+.m-1 {
+  margin: var(--spacing-xs);
+}
+.mt-1 {
+  margin-top: var(--spacing-xs);
+}
+.mr-1 {
+  margin-right: var(--spacing-xs);
+}
+.mb-1 {
+  margin-bottom: var(--spacing-xs);
+}
+.ml-1 {
+  margin-left: var(--spacing-xs);
+}
+
+.m-2 {
+  margin: var(--spacing-sm);
+}
+.mt-2 {
+  margin-top: var(--spacing-sm);
+}
+.mr-2 {
+  margin-right: var(--spacing-sm);
+}
+.mb-2 {
+  margin-bottom: var(--spacing-sm);
+}
+.ml-2 {
+  margin-left: var(--spacing-sm);
+}
+
+.m-4 {
+  margin: var(--spacing-md);
+}
+.mt-4 {
+  margin-top: var(--spacing-md);
+}
+.mr-4 {
+  margin-right: var(--spacing-md);
+}
+.mb-4 {
+  margin-bottom: var(--spacing-md);
+}
+.ml-4 {
+  margin-left: var(--spacing-md);
+}
+
+.m-8 {
+  margin: var(--spacing-lg);
+}
+.mt-8 {
+  margin-top: var(--spacing-lg);
+}
+.mr-8 {
+  margin-right: var(--spacing-lg);
+}
+.mb-8 {
+  margin-bottom: var(--spacing-lg);
+}
+.ml-8 {
+  margin-left: var(--spacing-lg);
+}
+
+.p-0 {
+  padding: 0;
+}
+.pt-0 {
+  padding-top: 0;
+}
+.pr-0 {
+  padding-right: 0;
+}
+.pb-0 {
+  padding-bottom: 0;
+}
+.pl-0 {
+  padding-left: 0;
+}
+
+.p-1 {
+  padding: var(--spacing-xs);
+}
+.pt-1 {
+  padding-top: var(--spacing-xs);
+}
+.pr-1 {
+  padding-right: var(--spacing-xs);
+}
+.pb-1 {
+  padding-bottom: var(--spacing-xs);
+}
+.pl-1 {
+  padding-left: var(--spacing-xs);
+}
+
+.p-2 {
+  padding: var(--spacing-sm);
+}
+.pt-2 {
+  padding-top: var(--spacing-sm);
+}
+.pr-2 {
+  padding-right: var(--spacing-sm);
+}
+.pb-2 {
+  padding-bottom: var(--spacing-sm);
+}
+.pl-2 {
+  padding-left: var(--spacing-sm);
+}
+
+.p-4 {
+  padding: var(--spacing-md);
+}
+.pt-4 {
+  padding-top: var(--spacing-md);
+}
+.pr-4 {
+  padding-right: var(--spacing-md);
+}
+.pb-4 {
+  padding-bottom: var(--spacing-md);
+}
+.pl-4 {
+  padding-left: var(--spacing-md);
+}
+
+.p-8 {
+  padding: var(--spacing-lg);
+}
+.pt-8 {
+  padding-top: var(--spacing-lg);
+}
+.pr-8 {
+  padding-right: var(--spacing-lg);
+}
+.pb-8 {
+  padding-bottom: var(--spacing-lg);
+}
+.pl-8 {
+  padding-left: var(--spacing-lg);
+}
+
+/* Text */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-sm {
+  font-size: var(--text-sm);
+}
+
+.text-base {
+  font-size: var(--text-base);
+}
+
+.text-lg {
+  font-size: var(--text-lg);
+}
+
+.text-xl {
+  font-size: var(--text-xl);
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+/* Colors */
+.text-primary {
+  color: var(--cardano-blue);
+}
+
+.text-gray {
+  color: var(--text-gray);
+}
+
+.text-error {
+  color: var(--error);
+}
+
+.text-success {
+  color: var(--success);
+}
+
+/* Backgrounds */
+.bg-white {
+  background-color: var(--white);
+}
+
+.bg-gray {
+  background-color: var(--bg-gray);
+}
+
+.bg-primary {
+  background-color: var(--cardano-blue);
+}
+
+/* Borders */
+.border {
+  border: 1px solid var(--border-color);
+}
+
+.border-2 {
+  border: 2px solid var(--border-color);
+}
+
+.rounded {
+  border-radius: var(--radius-sm);
+}
+
+.rounded-md {
+  border-radius: var(--radius-md);
+}
+
+.rounded-lg {
+  border-radius: var(--radius-lg);
+}
+
+/* Shadows */
+.shadow {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-md {
+  box-shadow: var(--shadow-md);
+}
+
+.shadow-lg {
+  box-shadow: var(--shadow-lg);
+}
+
+/* States */
+.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+}
+
+/* Transitions */
+.transition {
+  transition: all var(--transition-fast);
+}
+
+.transition-slow {
+  transition: all var(--transition-slow);
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+  .hidden-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .hidden-desktop {
+    display: none !important;
+  }
+}

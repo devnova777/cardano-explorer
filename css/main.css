@@ -1,0 +1,24 @@
+/* Cardano Block Explorer CSS
+ * Main entry point that imports all modular CSS files
+ */
+
+/* Base */
+@import 'modules/_variables.css';
+@import 'modules/_reset.css';
+
+/* Layout */
+@import 'modules/_layout.css';
+
+/* Components */
+@import 'modules/_header.css';
+@import 'modules/_search.css';
+@import 'modules/_cards.css';
+@import 'modules/_blocks.css';
+@import 'modules/_transactions.css';
+@import 'modules/_address.css';
+@import 'modules/_wallet.css';
+@import 'modules/_buttons.css';
+@import 'modules/_footer.css';
+
+/* Utilities */
+@import 'modules/_utilities.css';
