@@ -5,10 +5,11 @@
   box-shadow: var(--shadow-md);
   padding: var(--spacing-md);
   border: 2px solid var(--border-color);
-  height: 500px;
   display: flex;
   flex-direction: column;
+  width: 100%;
   transition: border-color var(--transition-fast);
+  min-height: auto; /* Allow card to grow with content */
 }
 
 .card:hover {
@@ -18,9 +19,9 @@
 /* Card Content */
 .card-content {
   flex: 1;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 /* Card Header */
@@ -31,6 +32,7 @@
   margin-bottom: var(--spacing-md);
   padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid var(--border-color);
+  width: 100%;
 }
 
 .card-title {
@@ -42,8 +44,9 @@
 /* Card Body */
 .card-body {
   flex: 1;
-  overflow-y: auto;
-  padding-right: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 /* Card Footer */

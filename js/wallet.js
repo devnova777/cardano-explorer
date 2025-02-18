@@ -159,95 +159,96 @@ const initWalletPage = async () => {
       <div id="error-container" style="display: none;">
         <div class="error-message" id="error-message"></div>
       </div>
-      <div class="wallet-overview">
-        <div class="wallet-details-grid">
-          <div class="balance-info">
-            <h3>Balance</h3>
-            <div id="wallet-balance" class="balance-amount">${formatAda(
-              totalBalance
-            )} ₳</div>
-          </div>
-          <div class="address-info">
-            <h3>Address Details</h3>
-            <div class="info-row">
-              <span class="label">Address</span>
-              <div class="value-with-copy">
-                ${walletData.address}
-                <button class="copy-btn" data-hash="${
-                  walletData.address
-                }" title="Copy address">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
-                </button>
+      <div class="section">
+        <div class="card">
+          <div class="wallet-overview">
+            <div class="wallet-details-grid">
+              <div class="balance-info">
+                <h3>Balance</h3>
+                <div class="balance-amount">${formatAda(totalBalance)}</div>
+              </div>
+              
+              <div class="address-info">
+                <h3>Address Details</h3>
+                <div class="info-row">
+                  <span class="label">Address</span>
+                  <div class="value-with-copy">
+                    <div class="address-value">${walletData.address}</div>
+                    <button class="copy-btn" data-hash="${
+                      walletData.address
+                    }" title="Copy address">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                ${
+                  walletData.stake_address
+                    ? `
+                  <div class="info-row">
+                    <span class="label">Stake Address</span>
+                    <div class="value-with-copy">
+                      <div class="address-value">${walletData.stake_address}</div>
+                      <button class="copy-btn" data-hash="${walletData.stake_address}" title="Copy stake address">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                `
+                    : ''
+                }
               </div>
             </div>
-            ${
-              walletData.stake_address
-                ? `
-              <div class="info-row">
-                <span class="label">Stake Address</span>
-                <div class="value-with-copy">
-                  ${walletData.stake_address}
-                  <button class="copy-btn" data-hash="${walletData.stake_address}" title="Copy stake address">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            `
-                : ''
-            }
-            ${
-              Array.isArray(walletData.amount) && walletData.amount.length > 1
-                ? `
-              <div class="tokens-section">
-                <h3>Tokens</h3>
-                <div class="token-list">
-                  ${walletData.amount
-                    .filter((amt) => amt.unit !== 'lovelace')
-                    .map(
-                      (token) => `
-                      <div class="token-item">
-                        <span class="token-unit">${token.unit}</span>
-                        <span class="token-quantity">${token.quantity}</span>
-                      </div>
-                    `
-                    )
-                    .join('')}
-                </div>
-              </div>
-            `
-                : ''
-            }
           </div>
-        </div>
-        <div class="transactions-section">
-          <h3>Recent Transactions</h3>
-          <ul id="transactions-list" class="transaction-list">
-            ${
-              Array.isArray(walletData.transactions) &&
-              walletData.transactions.length > 0
-                ? walletData.transactions
-                    .map(
-                      (tx) => `
-                    <li class="transaction-item">
-                      <a href="transaction.html?hash=${tx.tx_hash}">${
-                        tx.tx_hash
-                      }</a>
-                      <span class="transaction-time">${new Date(
+
+          ${
+            Array.isArray(walletData.transactions) &&
+            walletData.transactions.length > 0
+              ? `
+            <div class="transactions-section">
+              <h3>Recent Transactions</h3>
+              <div class="transaction-list">
+                ${walletData.transactions
+                  .map(
+                    (tx) => `
+                  <div class="transaction-item">
+                    <div class="tx-header">
+                      <span class="tx-time">${new Date(
                         tx.block_time * 1000
                       ).toLocaleString()}</span>
-                    </li>
-                  `
-                    )
-                    .join('')
-                : '<li>No transactions found</li>'
-            }
-          </ul>
+                    </div>
+                    <div class="tx-details">
+                      <div class="value-with-copy">
+                        <div class="address-value">
+                          <a href="transaction.html?hash=${tx.tx_hash}">${
+                      tx.tx_hash
+                    }</a>
+                        </div>
+                        <button class="copy-btn" data-hash="${
+                          tx.tx_hash
+                        }" title="Copy transaction hash">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                `
+                  )
+                  .join('')}
+              </div>
+            </div>
+          `
+              : ''
+          }
         </div>
       </div>
     `;
@@ -257,28 +258,33 @@ const initWalletPage = async () => {
   } catch (error) {
     console.error('Error loading wallet:', error);
     contentElement.innerHTML = `
-      <div id="error-container" style="display: block;">
-        <div class="error-message" id="error-message">${error.message}</div>
-      </div>
-      <div class="wallet-overview">
-        <div class="wallet-details-grid">
-          <div class="balance-info">
-            <h3>Balance</h3>
-            <div id="wallet-balance" class="balance-amount">0 ₳</div>
-          </div>
-          <div class="address-info">
-            <h3>Address Details</h3>
-            <div class="info-row">
-              <span class="label">Address</span>
-              <div id="wallet-address" class="value-with-copy">No address available</div>
+      <div class="section">
+        <div class="card">
+          <div class="transaction-content">
+            <div class="transaction-header">
+              <div class="summary-row">
+                <div class="summary-item">
+                  <span class="summary-label">Balance</span>
+                  <span class="summary-value">0 ₳</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="transaction-io">
+              <div class="io-section">
+                <div class="io-header">
+                  <h3 class="section-title">Error</h3>
+                </div>
+                <div class="io-list">
+                  <div class="io-item">
+                    <div class="io-item-content">
+                      <div class="error-message">${error.message}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="transactions-section">
-          <h3>Recent Transactions</h3>
-          <ul id="transactions-list" class="transaction-list">
-            <li>No transactions found</li>
-          </ul>
         </div>
       </div>
     `;

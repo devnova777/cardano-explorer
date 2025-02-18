@@ -3,12 +3,14 @@
 /* Wallet Overview */
 .wallet-overview {
   margin-bottom: var(--spacing-xl);
+  width: 100%;
 }
 
 .wallet-details-grid {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--spacing-lg);
-  grid-template-columns: 1fr;
+  width: 100%;
 }
 
 /* Balance Card */
@@ -16,20 +18,23 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  width: 100%;
 }
 
 .balance-amount {
-  font-size: var(--text-3xl);
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
   font-weight: 600;
   color: var(--cardano-blue);
   display: flex;
   align-items: baseline;
   gap: var(--spacing-xs);
+  word-break: break-all;
+  line-height: 1.2;
 }
 
 .balance-amount::after {
   content: '₳';
-  font-size: var(--text-xl);
+  font-size: clamp(1rem, 3vw, 1.5rem);
   color: var(--text-gray);
 }
 
@@ -37,6 +42,7 @@
 .token-list {
   display: grid;
   gap: var(--spacing-sm);
+  width: 100%;
 }
 
 .token-item {
@@ -46,12 +52,16 @@
   padding: var(--spacing-sm);
   background: var(--bg-gray);
   border-radius: var(--radius-sm);
+  word-break: break-all;
+  overflow-wrap: break-word;
 }
 
 .token-info {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  min-width: 0;
+  flex: 1;
 }
 
 .token-icon {
@@ -62,11 +72,18 @@
 
 .token-name {
   font-weight: 500;
+  font-size: clamp(0.75rem, 2vw, 0.9rem);
+  word-break: break-all;
+  overflow-wrap: break-word;
+  min-width: 0;
+  flex: 1;
 }
 
 .token-amount {
   font-family: monospace;
   color: var(--text-gray);
+  font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+  white-space: nowrap;
 }
 
 /* Address Info */
@@ -74,30 +91,61 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  width: 100%;
+  background: var(--white);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
 }
 
 .info-row {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  width: 100%;
 }
 
 .info-row .label {
-  font-size: var(--text-sm);
+  font-size: clamp(0.75rem, 2vw, 0.9rem);
   color: var(--text-gray);
   font-weight: 500;
 }
 
 .value-with-copy {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
   background: var(--bg-gray);
-  padding: var(--spacing-sm);
+  padding: var(--spacing-md);
   border-radius: var(--radius-sm);
+  width: 100%;
+}
+
+.address-value {
   font-family: monospace;
-  font-size: var(--text-sm);
+  font-size: clamp(0.7rem, 1.5vw, 0.85rem);
   word-break: break-all;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+  width: 100%;
+  color: var(--text-gray);
+  background: var(--white);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+}
+
+.copy-btn {
+  margin-left: auto;
+  margin-top: var(--spacing-xs);
+  background: var(--cardano-blue-light);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.copy-btn:hover {
+  background: var(--cardano-blue);
+  color: var(--white);
 }
 
 /* UTXO List */
@@ -165,11 +213,16 @@
 
   .info-row {
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
   }
 
   .info-row .label {
     min-width: 120px;
+    padding-top: var(--spacing-xs);
+  }
+
+  .token-list {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 
   .utxo-grid {
@@ -178,16 +231,25 @@
 }
 
 @media (max-width: 767px) {
-  .balance-amount {
-    font-size: var(--text-2xl);
+  .value-with-copy {
+    padding: var(--spacing-sm);
   }
 
-  .value-with-copy {
+  .address-value {
+    font-size: clamp(0.65rem, 1.2vw, 0.8rem);
+  }
+
+  .info-row .label {
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .token-item {
     flex-direction: column;
     align-items: flex-start;
+    gap: var(--spacing-xs);
   }
 
-  .copy-btn {
+  .token-amount {
     align-self: flex-end;
   }
 
