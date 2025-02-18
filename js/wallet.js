@@ -143,6 +143,17 @@ const initWalletPage = async () => {
     const walletData = data.data;
     console.log('Wallet data:', walletData);
 
+    // Calculate total balance from amount array if it's an array
+    let totalBalance = '0';
+    if (Array.isArray(walletData.amount)) {
+      totalBalance = walletData.amount
+        .filter((amt) => amt.unit === 'lovelace')
+        .reduce((sum, amt) => sum + BigInt(amt.quantity), BigInt(0))
+        .toString();
+    } else if (typeof walletData.amount === 'string') {
+      totalBalance = walletData.amount;
+    }
+
     // Render the full wallet content
     contentElement.innerHTML = `
       <div id="error-container" style="display: none;">
@@ -153,7 +164,7 @@ const initWalletPage = async () => {
           <div class="balance-info">
             <h3>Balance</h3>
             <div id="wallet-balance" class="balance-amount">${formatAda(
-              walletData.amount
+              totalBalance
             )} ₳</div>
           </div>
           <div class="address-info">
@@ -190,6 +201,28 @@ const initWalletPage = async () => {
             `
                 : ''
             }
+            ${
+              Array.isArray(walletData.amount) && walletData.amount.length > 1
+                ? `
+              <div class="tokens-section">
+                <h3>Tokens</h3>
+                <div class="token-list">
+                  ${walletData.amount
+                    .filter((amt) => amt.unit !== 'lovelace')
+                    .map(
+                      (token) => `
+                      <div class="token-item">
+                        <span class="token-unit">${token.unit}</span>
+                        <span class="token-quantity">${token.quantity}</span>
+                      </div>
+                    `
+                    )
+                    .join('')}
+                </div>
+              </div>
+            `
+                : ''
+            }
           </div>
         </div>
         <div class="transactions-section">
@@ -201,15 +234,15 @@ const initWalletPage = async () => {
                 ? walletData.transactions
                     .map(
                       (tx) => `
-                <li class="transaction-item">
-                  <a href="transaction.html?hash=${tx.tx_hash}">${
+                    <li class="transaction-item">
+                      <a href="transaction.html?hash=${tx.tx_hash}">${
                         tx.tx_hash
                       }</a>
-                  <span class="transaction-time">${new Date(
-                    tx.block_time * 1000
-                  ).toLocaleString()}</span>
-                </li>
-              `
+                      <span class="transaction-time">${new Date(
+                        tx.block_time * 1000
+                      ).toLocaleString()}</span>
+                    </li>
+                  `
                     )
                     .join('')
                 : '<li>No transactions found</li>'
