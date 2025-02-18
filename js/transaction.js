@@ -1,10 +1,90 @@
-import { getTransactionDetails } from './api.js';
+import { getTransactionDetails, search } from './api.js';
 import { renderTransactionDetails } from './renderers/transactions.js';
 import { renderError, renderLoading } from './renderers/shared.js';
 
 // Constants
-const ELEMENTS = {
-  CONTENT: 'transaction-content',
+const UI = {
+  ELEMENTS: {
+    CONTENT: 'transaction-content',
+    SEARCH_INPUT: '#search-input',
+    SEARCH_BUTTON: '#search-btn',
+  },
+  MINIMUM_SEARCH_LENGTH: 3,
+};
+
+/**
+ * Handle search functionality
+ * @param {string} query - Search query
+ */
+const handleSearch = async (query) => {
+  if (!query?.trim() || query.trim().length < UI.MINIMUM_SEARCH_LENGTH) {
+    alert(
+      `Please enter at least ${UI.MINIMUM_SEARCH_LENGTH} characters to search`
+    );
+    return;
+  }
+
+  const contentElement = document.getElementById(UI.ELEMENTS.CONTENT);
+
+  try {
+    contentElement.innerHTML = renderLoading('Searching...');
+
+    // Clean up the query - remove any whitespace
+    const cleanedQuery = query.trim();
+    console.log('Initiating search with query:', cleanedQuery);
+
+    // For transaction hashes (64 characters, hex)
+    if (/^[0-9a-fA-F]{64}$/.test(cleanedQuery)) {
+      window.location.href = `transaction.html?hash=${cleanedQuery}`;
+      return;
+    }
+
+    // For addresses (starting with addr1)
+    if (/^addr1[a-zA-Z0-9]+$/.test(cleanedQuery)) {
+      window.location.href = `wallet.html?address=${cleanedQuery}`;
+      return;
+    }
+
+    // For block heights (numeric only)
+    if (/^\d+$/.test(cleanedQuery)) {
+      window.location.href = `details.html?type=block&height=${cleanedQuery}`;
+      return;
+    }
+
+    // For block hashes (64 characters, hex)
+    if (/^[0-9a-fA-F]{64}$/.test(cleanedQuery)) {
+      window.location.href = `details.html?type=block&hash=${cleanedQuery}`;
+      return;
+    }
+
+    // If none of the above, use the search API
+    const searchResult = await search(cleanedQuery);
+    console.log('Search result:', searchResult);
+
+    if (!searchResult || !searchResult.type || !searchResult.result) {
+      throw new Error('No results found');
+    }
+
+    // Redirect based on result type
+    switch (searchResult.type) {
+      case 'transaction':
+        window.location.href = `transaction.html?hash=${searchResult.result.hash}`;
+        break;
+      case 'block':
+        window.location.href = `details.html?type=block&hash=${searchResult.result.hash}`;
+        break;
+      case 'address':
+        window.location.href = `wallet.html?address=${searchResult.result.address}`;
+        break;
+      default:
+        throw new Error('Unsupported search result type');
+    }
+  } catch (error) {
+    console.error('Search error:', error);
+    contentElement.innerHTML = renderError(
+      error.message || 'Search failed. Please try again.'
+    );
+  }
 };
 
 /**
@@ -13,7 +93,12 @@ const ELEMENTS = {
 async function initTransactionPage() {
   const params = new URLSearchParams(window.location.search);
   const hash = params.get('hash');
-  const contentElement = document.getElementById(ELEMENTS.CONTENT);
+  const contentElement = document.getElementById(UI.ELEMENTS.CONTENT);
+
+  if (!contentElement) {
+    console.error('Content element not found');
+    return;
+  }
 
   if (!hash) {
     contentElement.innerHTML = renderError('No transaction hash provided');
@@ -22,6 +107,11 @@ async function initTransactionPage() {
 
   try {
     contentElement.innerHTML = renderLoading('Loading transaction details...');
+
+    // Validate transaction hash format
+    if (!/^[0-9a-fA-F]{64}$/.test(hash)) {
+      throw new Error('Invalid transaction hash format');
+    }
 
     // Get and display transaction details
     console.log('Loading transaction:', hash);
@@ -64,8 +154,33 @@ function setupCopyButtons() {
   });
 }
 
+/**
+ * Setup event listeners for search functionality
+ */
+function setupEventListeners() {
+  const searchInput = document.querySelector(UI.ELEMENTS.SEARCH_INPUT);
+  const searchButton = document.querySelector(UI.ELEMENTS.SEARCH_BUTTON);
+
+  if (searchInput && searchButton) {
+    // Handle search button click
+    searchButton.addEventListener('click', () => {
+      handleSearch(searchInput.value);
+    });
+
+    // Handle enter key in search input
+    searchInput.addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') {
+        handleSearch(searchInput.value);
+      }
+    });
+  }
+}
+
 // Initialize the page when the DOM is loaded
-document.addEventListener('DOMContentLoaded', initTransactionPage);
+document.addEventListener('DOMContentLoaded', () => {
+  initTransactionPage();
+  setupEventListeners();
+});
 
 // Export for testing if needed
-export { initTransactionPage };
+export { initTransactionPage, handleSearch };

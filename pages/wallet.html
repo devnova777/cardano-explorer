@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cardano Block Explorer - Transaction Details</title>
+    <title>Cardano Block Explorer - Wallet Details</title>
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
 </head>
@@ -39,11 +39,36 @@
                     Home
                 </a>
                 <div id="contextual-nav"></div>
-                <div class="detail-type"></div>
+                <div class="detail-type">Wallet Details</div>
             </div>
 
-            <div id="transaction-content">
-                <!-- Transaction content will be dynamically inserted here -->
+            <div class="section">
+                <div class="card">
+                    <div class="scrollable-content" id="wallet-content">
+                        <div id="error-container" style="display: none;">
+                            <div class="error-message" id="error-message"></div>
+                        </div>
+                        <div class="wallet-overview">
+                            <div class="wallet-details-grid">
+                                <div class="balance-info">
+                                    <h3>Balance</h3>
+                                    <div id="wallet-balance" class="balance-amount">Loading...</div>
+                                </div>
+                                <div class="address-info">
+                                    <h3>Address Details</h3>
+                                    <div class="info-row">
+                                        <span class="label">Address</span>
+                                        <div id="wallet-address" class="value-with-copy">Loading...</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="transactions-section">
+                                <h3>Recent Transactions</h3>
+                                <ul id="transactions-list" class="transaction-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -54,13 +79,13 @@
             </div>
         </footer>
     </div>
+
     <!-- Load dependencies first -->
     <script type="module" src="../js/utils.js"></script>
     <script type="module" src="../js/api.js"></script>
     <script type="module" src="../js/renderers/shared.js"></script>
-    <script type="module" src="../js/renderers/transactions.js"></script>
-    <!-- Load main script last -->
-    <script type="module" src="../js/transaction.js"></script>
+    <!-- Load wallet-specific scripts -->
+    <script type="module" src="../js/wallet.js"></script>
 </body>
 
 </html>

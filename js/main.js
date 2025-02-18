@@ -11,7 +11,12 @@
  * @module main
  */
 
-import { getLatestBlock, getBlocks, getBlockTransactions } from './api.js';
+import {
+  getLatestBlock,
+  getBlocks,
+  getBlockTransactions,
+  search,
+} from './api.js';
 import {
   displayLatestBlock,
   displayBlockList,
@@ -22,7 +27,6 @@ import {
   hideBlockContent,
 } from './ui.js';
 import { getElement } from './utils.js';
-import { renderSearchResults } from './renderers/search.js';
 
 const CONFIG = {
   REFRESH_INTERVAL: 20000, // 20 seconds
@@ -33,12 +37,11 @@ const CONFIG = {
     CONTENT: 'block-content',
     FETCH_BLOCK: 'fetch-block',
     AUTO_REFRESH: 'auto-refresh',
-    SEARCH_INPUT: 'search-input',
-    SEARCH_BUTTON: 'search-btn',
+    SEARCH_INPUT: '#search-input',
+    SEARCH_BUTTON: '#search-btn',
     MAIN_CONTENT: 'main-content',
     EXPLORER_GRID: '.explorer-grid',
     CONTAINER: '.container',
-    SEARCH_BAR: '.search-bar input',
   },
 };
 
@@ -182,22 +185,27 @@ const handleSearch = async (query) => {
   }
 
   try {
-    const explorerGrid = document.querySelector(CONFIG.ELEMENTS.EXPLORER_GRID);
-    if (explorerGrid) explorerGrid.style.display = 'none';
+    displayLoading(CONFIG.ELEMENTS.LATEST_BLOCK);
+    const searchResult = await search(query.trim());
 
-    let mainContent = document.getElementById(CONFIG.ELEMENTS.MAIN_CONTENT);
-    if (!mainContent) {
-      mainContent = document.createElement('div');
-      mainContent.id = CONFIG.ELEMENTS.MAIN_CONTENT;
-      document
-        .querySelector(CONFIG.ELEMENTS.CONTAINER)
-        .appendChild(mainContent);
+    if (!searchResult || !searchResult.type || !searchResult.result) {
+      throw new Error('No results found');
     }
 
-    await renderSearchResults(query.trim());
+    // Redirect to details page with appropriate parameters
+    if (searchResult.type === 'block') {
+      window.location.href = `pages/details.html?type=block&hash=${searchResult.result.hash}`;
+    } else if (searchResult.type === 'transaction') {
+      window.location.href = `pages/details.html?type=transaction&hash=${searchResult.result.hash}`;
+    } else {
+      throw new Error('Unsupported search result type');
+    }
   } catch (error) {
     console.error('Search error:', error);
-    displayError('Failed to perform search', CONFIG.ELEMENTS.MAIN_CONTENT);
+    displayError(
+      error.message || 'Search failed. Please try again.',
+      CONFIG.ELEMENTS.LATEST_BLOCK
+    );
   }
 };
 
@@ -208,7 +216,7 @@ const setupEventListeners = () => {
   const autoRefreshBtn = getElement(CONFIG.ELEMENTS.AUTO_REFRESH);
   autoRefreshBtn?.addEventListener('click', () => autoRefresh.toggle());
 
-  const searchInput = document.querySelector(CONFIG.ELEMENTS.SEARCH_BAR);
+  const searchInput = document.querySelector(CONFIG.ELEMENTS.SEARCH_INPUT);
   const searchButton = document.querySelector(CONFIG.ELEMENTS.SEARCH_BUTTON);
 
   if (searchInput && searchButton) {

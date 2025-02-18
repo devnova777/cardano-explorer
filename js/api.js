@@ -25,6 +25,8 @@ const API_CONFIG = {
     TRANSACTION_DETAILS: (hash) => `/blocks/tx/${hash}`,
     SEARCH: '/blocks/search',
     ADDRESS_DETAILS: (address) => `/blocks/address/${address}`,
+    ADDRESS_UTXOS: (address) => `/addresses/${address}/utxos`,
+    ADDRESS_TXS: (address) => `/addresses/${address}/txs`,
   },
 };
 
@@ -183,11 +185,48 @@ export async function getTransactionDetails(txHash) {
 
 export async function search(query) {
   try {
+    // Clean up the query - remove commas if it's a number
+    const cleanQuery = query
+      .trim()
+      .replace(/^(\d+,?)+$/, (match) => match.replace(/,/g, ''));
+    console.log('Initiating search with query:', {
+      original: query,
+      cleaned: cleanQuery,
+    });
+
     const endpoint = `${API_CONFIG.ENDPOINTS.SEARCH}${createQueryString({
-      q: query,
+      q: cleanQuery,
     })}`;
-    return await apiRequest(endpoint);
+    console.log('Search endpoint:', endpoint);
+
+    const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`);
+    console.log('Search response status:', response.status);
+
+    const data = await response.json();
+    console.log('Search response data:', data);
+
+    if (!response.ok) {
+      const error = new Error(
+        data.error?.message || data.error || 'Search request failed'
+      );
+      error.status = response.status;
+      error.data = data;
+      throw error;
+    }
+
+    if (!data.success || !data.data) {
+      throw new Error(data.error || 'Invalid search response format');
+    }
+
+    return data.data;
   } catch (error) {
+    console.error('Search error details:', {
+      message: error.message,
+      status: error.status,
+      data: error.data,
+      originalError: error,
+    });
+
     const enhancedError = new Error(getFriendlyErrorMessage(error));
     enhancedError.status = error.status || 500;
     enhancedError.originalError = error;
@@ -195,6 +234,36 @@ export async function search(query) {
   }
 }
 
+/**
+ * Get address details including balance and stake address
+ * @param {string} address - The address to get details for
+ * @returns {Promise<Object>} Address details
+ */
 export async function getAddressDetails(address) {
-  return apiRequest(API_CONFIG.ENDPOINTS.ADDRESS_DETAILS(address));
+  try {
+    // Fetch basic address info first
+    const details = await apiRequest(
+      API_CONFIG.ENDPOINTS.ADDRESS_DETAILS(address)
+    );
+
+    // Only fetch additional data if we have basic details
+    if (details) {
+      const [utxos, txs] = await Promise.all([
+        apiRequest(API_CONFIG.ENDPOINTS.ADDRESS_UTXOS(address)),
+        apiRequest(API_CONFIG.ENDPOINTS.ADDRESS_TXS(address)),
+      ]);
+
+      return {
+        address,
+        amount: details.amount,
+        stake_address: details.stake_address,
+        utxos: utxos || [],
+        transactions: (txs || []).slice(0, 20), // Limit to last 20 transactions
+      };
+    }
+
+    throw new Error('Address not found');
+  } catch (error) {
+    throw new Error(getFriendlyErrorMessage(error));
+  }
 }

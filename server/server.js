@@ -75,12 +75,11 @@ app.use(helmet(securityConfig));
 app.use(rateLimit(rateLimitConfig));
 
 // Configure proper MIME types
-express.static.mime.define({ 'application/javascript': ['js'] });
 app.use(
   express.static(rootDir, {
     setHeaders: (res, path) => {
       if (path.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
       }
     },
   })

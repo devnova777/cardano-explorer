@@ -18,7 +18,6 @@ import {
 } from './api.js';
 import { renderBlockDetails, updateDetailType } from './renderers/blocks.js';
 import { renderTransactionDetails } from './renderers/transactions.js';
-import { renderSearchResults } from './renderers/search.js';
 import { renderError, renderLoading } from './renderers/shared.js';
 import { getElement } from './utils.js';
 
@@ -26,8 +25,8 @@ const UI = {
   SELECTORS: {
     DETAILS_CONTENT: 'details-content',
     DETAIL_TYPE: '.detail-type',
-    SEARCH_INPUT: '.search-bar input',
-    SEARCH_BUTTON: '.search-btn',
+    SEARCH_INPUT: '#search-input',
+    SEARCH_BUTTON: '#search-btn',
     DETAILS_CONTAINER: '.details-container',
     MAIN_CONTENT: '#main-content',
     CONTAINER: '.container',
@@ -117,8 +116,10 @@ const getUrlParams = () => {
     throw new Error('Missing required URL parameters: type and hash');
   }
 
-  if (!['block', 'transaction'].includes(type)) {
-    throw new Error('Invalid type parameter. Must be "block" or "transaction"');
+  if (!['block', 'transaction', 'address'].includes(type)) {
+    throw new Error(
+      'Invalid type parameter. Must be "block", "transaction", or "address"'
+    );
   }
 
   return { type, hash };
@@ -251,27 +252,36 @@ const handleSearch = async (query) => {
     return;
   }
 
+  const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
+
   try {
-    // Hide the details container and show the main content for search results
-    const detailsContainer = document.querySelector(
-      UI.SELECTORS.DETAILS_CONTAINER
-    );
-    if (detailsContainer) {
-      detailsContainer.style.display = 'none';
+    displayLoading();
+    const searchResult = await search(query.trim());
+    console.log('Search result:', searchResult);
+
+    if (!searchResult || !searchResult.type || !searchResult.result) {
+      throw new Error('No results found');
     }
 
-    // Create main content div if it doesn't exist
-    let mainContent = document.querySelector(UI.SELECTORS.MAIN_CONTENT);
-    if (!mainContent) {
-      mainContent = document.createElement('div');
-      mainContent.id = 'main-content';
-      document.querySelector(UI.SELECTORS.CONTAINER).appendChild(mainContent);
+    // Simple switch for different result types
+    switch (searchResult.type) {
+      case 'address':
+        const address = searchResult.result.address;
+        console.log('Redirecting to wallet page:', { address });
+        window.location.href = `wallet.html?address=${address}`;
+        break;
+      case 'transaction':
+        window.location.href = `transaction.html?hash=${searchResult.result.hash}`;
+        break;
+      case 'block':
+        window.location.href = `details.html?type=block&hash=${searchResult.result.hash}`;
+        break;
+      default:
+        throw new Error('Unsupported search result type');
     }
-
-    await renderSearchResults(query.trim());
   } catch (error) {
     console.error('Search error:', error);
-    displayError('Failed to perform search');
+    displayError(error.message || 'Search failed. Please try again.');
   }
 };
 
@@ -309,9 +319,14 @@ const initDetailsPage = async () => {
     const params = getUrlParams();
     console.log('URL params:', params);
 
+    if (params.type === 'address') {
+      window.location.href = `wallet.html?address=${params.hash}`;
+      return;
+    }
+
     const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
     if (!detailsContent) {
-      throw new Error('Details content element not found in the DOM');
+      throw new Error('Details content element not found');
     }
 
     displayLoading();
@@ -320,14 +335,9 @@ const initDetailsPage = async () => {
     } else if (params.type === 'transaction') {
       await window.loadTransactionDetails(params.hash);
     }
-    console.log('Content loaded successfully');
   } catch (error) {
     console.error('Error initializing details page:', error);
-    displayError(
-      error.message.includes('URL parameter')
-        ? 'Please provide both a type (block/transaction) and hash in the URL.'
-        : error.message
-    );
+    displayError(error.message || 'Failed to load details');
   }
 };
 

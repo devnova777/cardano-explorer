@@ -147,6 +147,10 @@ router.get(
   '/address/:address',
   asyncHandler(async (req, res) => {
     const { address } = req.params;
+    if (!address || address === 'undefined') {
+      throw new APIError('Invalid address parameter', 400);
+    }
+    console.log('Getting address details for:', address);
     const data = await getAddressDetails(address);
     res.json({ success: true, data });
   })

@@ -18,7 +18,6 @@
  * @module renderers/search
  */
 
-import { search } from '../api.js';
 import { formatDate, formatAda } from '../utils.js';
 
 const getBasePath = () =>
@@ -49,12 +48,15 @@ const RESULT_RENDERERS = {
     renderResultSection(
       'Block',
       renderResultCard(
-        `Block #${block.height}`,
+        `Block #${block.height.toLocaleString()}`,
         `
-      <p>Hash: ${renderLink(block.hash, 'block', block.hash)}</p>
-      <p>Time: ${formatDate(block.time)}</p>
-      <p>Transactions: ${block.tx_count}</p>
-    `
+        <p>Hash: ${renderLink(block.hash, 'block', block.hash)}</p>
+        <p>Height: ${block.height.toLocaleString()}</p>
+        <p>Time: ${formatDate(block.time)}</p>
+        <p>Transactions: ${block.tx_count.toLocaleString()}</p>
+        <p>Size: ${block.size.toLocaleString()} bytes</p>
+        <p>Epoch: ${block.epoch}</p>
+        `
       )
     ),
 
@@ -185,7 +187,34 @@ const renderError = (message) => `
   </div>
 `;
 
-const getUserFriendlyError = (error) => {
+/**
+ * Makes a search request to the API
+ * @param {string} query - The search query
+ * @returns {Promise<Object>} The search result
+ */
+export const search = async (query) => {
+  try {
+    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+    if (!response.ok) {
+      throw new Error('Search request failed');
+    }
+
+    const data = await response.json();
+    if (!data || !data.type || !data.result) {
+      throw new Error('No results found');
+    }
+
+    return {
+      type: data.type,
+      result: data.result,
+    };
+  } catch (error) {
+    console.error('Search API error:', error);
+    throw error;
+  }
+};
+
+export const getUserFriendlyError = (error) => {
   if (error.message.includes('not found')) {
     return 'No results found for your search. Please try a different query.';
   }
