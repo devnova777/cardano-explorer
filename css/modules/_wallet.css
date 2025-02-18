@@ -205,6 +205,44 @@
   font-size: var(--text-sm);
 }
 
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.pagination-btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  color: var(--text-gray);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: var(--cardano-blue);
+  color: var(--white);
+  border-color: var(--cardano-blue);
+}
+
+.pagination-btn.active {
+  background: var(--cardano-blue);
+  color: var(--white);
+  border-color: var(--cardano-blue);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Responsive Design */
 @media (min-width: 768px) {
   .wallet-details-grid {
@@ -257,5 +295,14 @@
     flex-direction: column;
     align-items: flex-start;
     gap: var(--spacing-xs);
+  }
+
+  .pagination {
+    flex-wrap: wrap;
+  }
+
+  .pagination-btn {
+    font-size: 0.9rem;
+    padding: var(--spacing-xs);
   }
 }

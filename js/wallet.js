@@ -9,6 +9,7 @@ const UI = {
     SEARCH_BUTTON: '#search-btn',
   },
   MINIMUM_SEARCH_LENGTH: 3,
+  TRANSACTIONS_PER_PAGE: 10,
 };
 
 /**
@@ -97,6 +98,89 @@ const handleSearch = async (query) => {
       error.message || 'Search failed. Please try again.'
     );
   }
+};
+
+/**
+ * Render pagination controls
+ */
+const renderPagination = (currentPage, totalTransactions) => {
+  const totalPages = Math.ceil(totalTransactions / UI.TRANSACTIONS_PER_PAGE);
+  if (totalPages <= 1) return '';
+
+  const pages = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pages.push(`
+      <button class="pagination-btn ${i === currentPage ? 'active' : ''}" 
+              data-page="${i}"
+              ${i === currentPage ? 'disabled' : ''}>
+        ${i}
+      </button>
+    `);
+  }
+
+  return `
+    <div class="pagination">
+      <button class="pagination-btn" 
+              data-page="${currentPage - 1}"
+              ${currentPage === 1 ? 'disabled' : ''}>
+        Previous
+      </button>
+      ${pages.join('')}
+      <button class="pagination-btn" 
+              data-page="${currentPage + 1}"
+              ${currentPage === totalPages ? 'disabled' : ''}>
+        Next
+      </button>
+    </div>
+  `;
+};
+
+/**
+ * Render transactions for current page
+ */
+const renderTransactions = (transactions, currentPage = 1) => {
+  const start = (currentPage - 1) * UI.TRANSACTIONS_PER_PAGE;
+  const end = start + UI.TRANSACTIONS_PER_PAGE;
+  const paginatedTransactions = transactions.slice(start, end);
+
+  return `
+    <div class="transactions-section">
+      <h3>Recent Transactions</h3>
+      <div class="transaction-list">
+        ${paginatedTransactions
+          .map(
+            (tx) => `
+          <div class="transaction-item">
+            <div class="tx-header">
+              <span class="tx-time">${new Date(
+                tx.block_time * 1000
+              ).toLocaleString()}</span>
+            </div>
+            <div class="tx-details">
+              <div class="value-with-copy">
+                <div class="address-value">
+                  <a href="transaction.html?hash=${tx.tx_hash}">${
+              tx.tx_hash
+            }</a>
+                </div>
+                <button class="copy-btn" data-hash="${
+                  tx.tx_hash
+                }" title="Copy transaction hash">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+      ${renderPagination(currentPage, transactions.length)}
+    </div>
+  `;
 };
 
 /**
@@ -210,43 +294,7 @@ const initWalletPage = async () => {
           ${
             Array.isArray(walletData.transactions) &&
             walletData.transactions.length > 0
-              ? `
-            <div class="transactions-section">
-              <h3>Recent Transactions</h3>
-              <div class="transaction-list">
-                ${walletData.transactions
-                  .map(
-                    (tx) => `
-                  <div class="transaction-item">
-                    <div class="tx-header">
-                      <span class="tx-time">${new Date(
-                        tx.block_time * 1000
-                      ).toLocaleString()}</span>
-                    </div>
-                    <div class="tx-details">
-                      <div class="value-with-copy">
-                        <div class="address-value">
-                          <a href="transaction.html?hash=${tx.tx_hash}">${
-                      tx.tx_hash
-                    }</a>
-                        </div>
-                        <button class="copy-btn" data-hash="${
-                          tx.tx_hash
-                        }" title="Copy transaction hash">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                `
-                  )
-                  .join('')}
-              </div>
-            </div>
-          `
+              ? renderTransactions(walletData.transactions, 1)
               : ''
           }
         </div>
@@ -255,6 +303,8 @@ const initWalletPage = async () => {
 
     // Setup copy buttons after rendering
     setupCopyButtons();
+    // Setup pagination buttons
+    setupPaginationButtons(walletData.transactions);
   } catch (error) {
     console.error('Error loading wallet:', error);
     contentElement.innerHTML = `
@@ -309,6 +359,30 @@ function setupCopyButtons() {
       } catch (err) {
         console.error('Failed to copy:', err);
         btn.title = 'Failed to copy';
+      }
+    });
+  });
+}
+
+/**
+ * Setup pagination event listeners
+ */
+function setupPaginationButtons(transactions) {
+  document.querySelectorAll('.pagination-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (!btn.disabled) {
+        const page = parseInt(btn.dataset.page);
+        const transactionsSection = document.querySelector(
+          '.transactions-section'
+        );
+        if (transactionsSection) {
+          transactionsSection.outerHTML = renderTransactions(
+            transactions,
+            page
+          );
+          setupCopyButtons();
+          setupPaginationButtons(transactions);
+        }
       }
     });
   });
