@@ -8,7 +8,11 @@
       "use": "@vercel/node"
     },
     {
-      "src": "**/*.html",
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "pages/**/*.html",
       "use": "@vercel/static"
     },
     {
@@ -95,6 +99,10 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
