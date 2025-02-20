@@ -17,16 +17,13 @@ const API_CONFIG = {
   BASE_URL: '/api',
   DEFAULT_PAGE_SIZE: 10,
   ENDPOINTS: {
+    BLOCKS: '/blocks',
     LATEST_BLOCK: '/blocks/latest',
-    BLOCK_DETAILS: (hash) => `/blocks/${hash}`,
-    BLOCK_BY_HEIGHT: (height) => `/blocks/height/${height}`,
+    BLOCK_BY_HASH: (hash) => `/blocks/${hash}`,
     BLOCK_TRANSACTIONS: (hash) => `/blocks/${hash}/transactions`,
-    BLOCKS_LIST: '/blocks',
-    TRANSACTION_DETAILS: (hash) => `/tx/${hash}`,
+    TRANSACTION: (hash) => `/tx/${hash}`,
     SEARCH: '/blocks/search',
-    ADDRESS_DETAILS: (address) => `/blocks/address/${address}`,
-    ADDRESS_UTXOS: (address) => `/addresses/${address}/utxos`,
-    ADDRESS_TXS: (address) => `/addresses/${address}/txs`,
+    ADDRESS: (address) => `/blocks/address/${address}`,
   },
 };
 
@@ -136,7 +133,7 @@ export async function getBlockDetails(hashOrHeight) {
     if (isHeight) {
       // For height, first get the block hash
       console.log('Getting block hash for height:', heightNum);
-      const endpoint = API_CONFIG.ENDPOINTS.BLOCK_BY_HEIGHT(heightNum);
+      const endpoint = API_CONFIG.ENDPOINTS.BLOCK_BY_HASH(heightNum);
       const blockHashes = await apiRequest(endpoint);
 
       // Validate block hashes response
@@ -147,11 +144,11 @@ export async function getBlockDetails(hashOrHeight) {
       // Get full block details using the first hash
       console.log('Getting block details for hash:', blockHashes[0]);
       return await apiRequest(
-        API_CONFIG.ENDPOINTS.BLOCK_DETAILS(blockHashes[0])
+        API_CONFIG.ENDPOINTS.BLOCK_BY_HASH(blockHashes[0])
       );
     } else {
       // For hash, directly get block details
-      return await apiRequest(API_CONFIG.ENDPOINTS.BLOCK_DETAILS(hashOrHeight));
+      return await apiRequest(API_CONFIG.ENDPOINTS.BLOCK_BY_HASH(hashOrHeight));
     }
   } catch (error) {
     console.error('Block details error:', { hashOrHeight, error });
@@ -206,14 +203,12 @@ export async function getBlocks(
   limit = API_CONFIG.DEFAULT_PAGE_SIZE
 ) {
   const query = createQueryString({ page, limit });
-  return apiRequest(`${API_CONFIG.ENDPOINTS.BLOCKS_LIST}${query}`);
+  return apiRequest(`${API_CONFIG.ENDPOINTS.BLOCKS}${query}`);
 }
 
 export async function getTransactionDetails(txHash) {
   console.log('Getting transaction details for:', txHash);
-  const data = await apiRequest(
-    API_CONFIG.ENDPOINTS.TRANSACTION_DETAILS(txHash)
-  );
+  const data = await apiRequest(API_CONFIG.ENDPOINTS.TRANSACTION(txHash));
   console.log('Transaction details response:', JSON.stringify(data, null, 2));
   return data;
 }
@@ -277,15 +272,13 @@ export async function search(query) {
 export async function getAddressDetails(address) {
   try {
     // Fetch basic address info first
-    const details = await apiRequest(
-      API_CONFIG.ENDPOINTS.ADDRESS_DETAILS(address)
-    );
+    const details = await apiRequest(API_CONFIG.ENDPOINTS.ADDRESS(address));
 
     // Only fetch additional data if we have basic details
     if (details) {
       const [utxos, txs] = await Promise.all([
-        apiRequest(API_CONFIG.ENDPOINTS.ADDRESS_UTXOS(address)),
-        apiRequest(API_CONFIG.ENDPOINTS.ADDRESS_TXS(address)),
+        apiRequest(API_CONFIG.ENDPOINTS.ADDRESS(address)),
+        apiRequest(API_CONFIG.ENDPOINTS.ADDRESS(address)),
       ]);
 
       return {

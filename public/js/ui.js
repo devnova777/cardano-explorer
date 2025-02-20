@@ -22,7 +22,7 @@ import { formatDate, formatAda, getElement } from './utils.js';
 const UI_CONFIG = {
   ELEMENTS: {
     LATEST_BLOCK: 'latest-block-info',
-    BLOCK_LIST: 'blocks-container',
+    BLOCK_LIST: 'block-list',
     CONTENT: 'block-content',
   },
   TEMPLATES: {
