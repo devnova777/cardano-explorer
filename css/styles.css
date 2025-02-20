@@ -1660,3 +1660,27 @@ button {
   background: var(--cardano-blue);
   border-radius: var(--radius-sm);
 }
+
+/* GitHub Button Styles */
+.github-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #24292e;
+  color: white !important;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.github-btn:hover {
+  background-color: #2f363d;
+  color: white !important;
+}
+
+.github-logo {
+  width: 20px;
+  height: 20px;
+  filter: invert(1);
+}
