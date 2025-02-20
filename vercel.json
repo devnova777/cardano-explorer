@@ -4,7 +4,7 @@
   "trailingSlash": false,
   "builds": [
     {
-      "src": "server/server.js",
+      "src": "api/**/*.js",
       "use": "@vercel/node"
     },
     {
@@ -102,18 +102,35 @@
       ]
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/server/server.js"
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
     },
     {
-      "source": "/pages/:path*",
-      "destination": "/pages/:path*"
+      "src": "/css/(.*)",
+      "dest": "/css/$1",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
     },
     {
-      "source": "/:path*",
-      "destination": "/:path*"
+      "src": "/js/(.*)",
+      "dest": "/js/$1",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/images/(.*)",
+      "dest": "/images/$1",
+      "headers": {
+        "cache-control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cardano Block Explorer - Details</title>
+    <title>Cardano Block Explorer - Block</title>
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
 </head>
@@ -28,7 +28,7 @@
             </div>
         </header>
 
-        <div class="details-container">
+        <div class="block-container">
             <div class="navigation-bar">
                 <a href="../index.html" class="action-btn" id="home-button">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -39,12 +39,12 @@
                     Home
                 </a>
                 <div id="contextual-nav"></div>
-                <div class="detail-type"></div>
+                <div class="block-number"></div>
             </div>
 
             <div class="section">
                 <div class="card">
-                    <div class="scrollable-content" id="details-content">
+                    <div class="scrollable-content" id="block-content">
                         <!-- Content will be dynamically inserted here -->
                     </div>
                 </div>
@@ -65,12 +65,10 @@
     <!-- Load dependencies first -->
     <script type="module" src="/js/utils.js"></script>
     <script type="module" src="/js/api.js"></script>
-    <script type="module" src="/js/renderers/details.js"></script>
     <script type="module" src="/js/renderers/blocks.js"></script>
-    <script type="module" src="/js/renderers/transactions.js"></script>
     <script type="module" src="/js/renderers/shared.js"></script>
     <!-- Load main script last -->
-    <script type="module" src="/js/details.js"></script>
+    <script type="module" src="/js/block.js"></script>
 </body>
 
 </html>
