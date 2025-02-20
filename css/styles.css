@@ -267,28 +267,25 @@ body {
 
 /* Scrollable content container - reusable class for dynamic content */
 .scrollable-content {
-  height: 100%;
   overflow-y: auto;
+  max-height: 600px;
+  padding-right: var(--spacing-sm);
   scrollbar-width: thin;
-  scrollbar-color: var(--cardano-blue) var(--border-color);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.5rem;
+  scrollbar-color: var(--cardano-blue) var(--bg-gray);
 }
 
 .scrollable-content::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .scrollable-content::-webkit-scrollbar-track {
-  background: var(--border-color);
-  border-radius: 4px;
+  background: var(--bg-gray);
+  border-radius: var(--radius-sm);
 }
 
 .scrollable-content::-webkit-scrollbar-thumb {
-  background-color: var(--cardano-blue);
-  border-radius: 4px;
+  background: var(--cardano-blue);
+  border-radius: var(--radius-sm);
 }
 
 /* Content item styles - for items within scrollable containers */
@@ -1599,4 +1596,27 @@ button {
   .value-with-copy {
     font-size: var(--text-base);
   }
+}
+
+/* Block List Section */
+#block-list {
+  overflow-y: auto;
+  max-height: 500px;
+  padding-right: var(--spacing-sm);
+  scrollbar-width: thin;
+  scrollbar-color: var(--cardano-blue) var(--bg-gray);
+}
+
+#block-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+#block-list::-webkit-scrollbar-track {
+  background: var(--bg-gray);
+  border-radius: var(--radius-sm);
+}
+
+#block-list::-webkit-scrollbar-thumb {
+  background: var(--cardano-blue);
+  border-radius: var(--radius-sm);
 }
