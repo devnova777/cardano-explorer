@@ -106,6 +106,10 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
+    },
+    {
+      "source": "/public/(.*)",
+      "destination": "/public/$1"
     }
   ]
 }
