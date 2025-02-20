@@ -88,11 +88,61 @@ const handleSearch = async (query) => {
 };
 
 /**
+ * Handle back navigation
+ */
+const handleBackNavigation = () => {
+  const params = new URLSearchParams(window.location.search);
+  const blockHash = params.get('blockHash');
+
+  if (blockHash) {
+    window.location.href = `details.html?type=block&hash=${blockHash}`;
+  } else {
+    window.history.back();
+  }
+};
+
+/**
+ * Setup event listeners for the page
+ */
+const setupEventListeners = () => {
+  // Setup back button
+  const backBtn = document.querySelector('#back-to-block');
+  if (backBtn) {
+    backBtn.addEventListener('click', handleBackNavigation);
+  }
+
+  // Setup copy buttons
+  setupCopyButtons();
+
+  // Setup address links
+  setupAddressLinks();
+
+  // Setup search functionality
+  const searchInput = document.querySelector(UI.ELEMENTS.SEARCH_INPUT);
+  const searchButton = document.querySelector(UI.ELEMENTS.SEARCH_BUTTON);
+
+  if (searchInput && searchButton) {
+    // Handle search button click
+    searchButton.addEventListener('click', () => {
+      handleSearch(searchInput.value);
+    });
+
+    // Handle enter key in search input
+    searchInput.addEventListener('keypress', (event) => {
+      if (event.key === 'Enter') {
+        handleSearch(searchInput.value);
+      }
+    });
+  }
+};
+
+/**
  * Initialize the transaction details page
  */
 async function initTransactionPage() {
   const params = new URLSearchParams(window.location.search);
   const hash = params.get('hash');
+  const blockHash = params.get('blockHash'); // Get block hash if available
   const contentElement = document.getElementById(UI.ELEMENTS.CONTENT);
 
   if (!contentElement) {
@@ -118,11 +168,14 @@ async function initTransactionPage() {
     const transaction = await getTransactionDetails(hash);
     console.log('Transaction loaded:', transaction);
 
+    // Use block_hash from API response, fallback to blockHash from URL if needed
+    transaction.block = transaction.block_hash || blockHash;
+
     // Render the transaction
     contentElement.innerHTML = renderTransactionDetails(transaction);
 
-    // Setup copy buttons
-    setupCopyButtons();
+    // Setup event listeners
+    setupEventListeners();
   } catch (error) {
     console.error('Error loading transaction:', error);
     contentElement.innerHTML = renderError(
@@ -154,33 +207,21 @@ function setupCopyButtons() {
   });
 }
 
-/**
- * Setup event listeners for search functionality
- */
-function setupEventListeners() {
-  const searchInput = document.querySelector(UI.ELEMENTS.SEARCH_INPUT);
-  const searchButton = document.querySelector(UI.ELEMENTS.SEARCH_BUTTON);
-
-  if (searchInput && searchButton) {
-    // Handle search button click
-    searchButton.addEventListener('click', () => {
-      handleSearch(searchInput.value);
-    });
-
-    // Handle enter key in search input
-    searchInput.addEventListener('keypress', (event) => {
-      if (event.key === 'Enter') {
-        handleSearch(searchInput.value);
-      }
-    });
-  }
-}
+// Add function to setup address links
+const setupAddressLinks = () => {
+  document.querySelectorAll('.address-value').forEach((link) => {
+    if (link.tagName === 'A') {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const href = link.getAttribute('href');
+        window.location.href = href;
+      });
+    }
+  });
+};
 
 // Initialize the page when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  initTransactionPage();
-  setupEventListeners();
-});
+document.addEventListener('DOMContentLoaded', initTransactionPage);
 
 // Export for testing if needed
 export { initTransactionPage, handleSearch };

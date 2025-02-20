@@ -80,7 +80,11 @@ export const renderTransactionIO = (transaction) => `
             <div class="io-item-content">
               <div class="io-address">
                 <span class="address-label">Address:</span>
-                <span class="address-value">${item.address}</span>
+                <a href="wallet.html?address=${
+                  item.address
+                }" class="address-value">
+                  ${item.address}
+                </a>
                 <button class="copy-btn" data-hash="${
                   item.address
                 }" title="Copy Address">
@@ -92,7 +96,9 @@ export const renderTransactionIO = (transaction) => `
                   ? `
                 <div class="io-tx-hash">
                   <span class="tx-label">Tx Hash:</span>
-                  <span class="tx-hash">${item.tx_hash}</span>
+                  <a href="transaction.html?hash=${item.tx_hash}" class="tx-hash">
+                    ${item.tx_hash}
+                  </a>
                   <button class="copy-btn" data-hash="${item.tx_hash}" title="Copy Transaction Hash">
                     ${SVG_ICONS.copy}
                   </button>
@@ -110,7 +116,7 @@ export const renderTransactionIO = (transaction) => `
     <div class="io-section outputs-section">
       <div class="io-header">
         <h3 class="section-title">
-          ${SVG_ICONS.leftArrow} Outputs (${transaction.utxos.outputs.length})
+          ${SVG_ICONS.rightArrow} Outputs (${transaction.utxos.outputs.length})
         </h3>
         <div class="io-total">${formatAda(transaction.output_amount)} ₳</div>
       </div>
@@ -126,26 +132,17 @@ export const renderTransactionIO = (transaction) => `
             <div class="io-item-content">
               <div class="io-address">
                 <span class="address-label">Address:</span>
-                <span class="address-value">${item.address}</span>
+                <a href="wallet.html?address=${
+                  item.address
+                }" class="address-value">
+                  ${item.address}
+                </a>
                 <button class="copy-btn" data-hash="${
                   item.address
                 }" title="Copy Address">
                   ${SVG_ICONS.copy}
                 </button>
               </div>
-              ${
-                item.tx_hash
-                  ? `
-                <div class="io-tx-hash">
-                  <span class="tx-label">Tx Hash:</span>
-                  <span class="tx-hash">${item.tx_hash}</span>
-                  <button class="copy-btn" data-hash="${item.tx_hash}" title="Copy Transaction Hash">
-                    ${SVG_ICONS.copy}
-                  </button>
-                </div>
-              `
-                  : ''
-              }
             </div>
           </div>
         `
@@ -189,6 +186,16 @@ const renderAssets = (item) => {
  */
 export const renderTransactionDetails = (transaction) => {
   try {
+    // Add back button to contextual nav
+    document.getElementById('contextual-nav').innerHTML = `
+      <button class="back-btn action-btn" id="back-to-block">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+        Back to Explorer
+      </button>
+    `;
+
     const totalValue = formatAda(transaction.output_amount);
     const fee = formatAda(transaction.fees);
     const totalWithFees = formatAda(
@@ -199,6 +206,14 @@ export const renderTransactionDetails = (transaction) => {
       <div class="transaction-content">
         <div class="transaction-header">
           ${createHashElement(transaction.hash, 'Transaction Hash')}
+          ${
+            transaction.block
+              ? createHashElement(transaction.block, 'Block Hash')
+              : renderDetailRow(
+                  'Block Height',
+                  `#${transaction.block_height.toLocaleString()}`
+                )
+          }
         </div>
         <div class="transaction-details">
           <div class="transaction-summary">
@@ -212,7 +227,13 @@ export const renderTransactionDetails = (transaction) => {
               </div>
               <div class="summary-item">
                 <div class="summary-label">Block Height</div>
-                <div class="summary-value">#${transaction.block_height.toLocaleString()}</div>
+                <div class="summary-value">
+                  <a href="details.html?type=block&height=${
+                    transaction.block_height
+                  }" class="hash-link">
+                    #${transaction.block_height.toLocaleString()}
+                  </a>
+                </div>
               </div>
               <div class="summary-item">
                 <div class="summary-label">Timestamp</div>
