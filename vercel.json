@@ -8,7 +8,11 @@
       "use": "@vercel/node"
     },
     {
-      "src": "**/*.html",
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "pages/**/*.html",
       "use": "@vercel/static"
     },
     {
@@ -16,7 +20,6 @@
       "use": "@vercel/static"
     }
   ],
-
   "github": {
     "enabled": true,
     "silent": false,
@@ -60,33 +63,33 @@
       ]
     },
     {
-      "source": "/js/(.*)",
+      "source": "/public/js/(.*)",
       "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
         {
           "key": "Content-Type",
           "value": "application/javascript; charset=utf-8"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
         }
       ]
     },
     {
-      "source": "/css/(.*)",
+      "source": "/public/css/(.*)",
       "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
         {
           "key": "Content-Type",
           "value": "text/css; charset=utf-8"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
         }
       ]
     },
     {
-      "source": "/images/(.*)",
+      "source": "/public/images/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -101,16 +104,8 @@
       "destination": "/api/:path*"
     },
     {
-      "source": "/js/:path*",
-      "destination": "/public/js/:path*"
-    },
-    {
-      "source": "/css/:path*",
-      "destination": "/public/css/:path*"
-    },
-    {
-      "source": "/images/:path*",
-      "destination": "/public/images/:path*"
+      "source": "/public/:path*",
+      "destination": "/public/:path*"
     }
   ]
 }
