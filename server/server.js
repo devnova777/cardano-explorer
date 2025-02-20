@@ -1,16 +1,3 @@
-/**
- * Express Server Configuration
- *
- * Handles server setup and configuration:
- * - Middleware configuration
- * - Route mounting
- * - Security settings
- * - Error handling
- * - Development utilities
- *
- * @module server
- */
-
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -22,13 +9,14 @@ import helmet from 'helmet';
 import blockRoutes from './routes/blocks.js';
 import transactionRoutes from './routes/transactions.js';
 import { validateApiConfig, errorHandler } from './middleware/errorHandler.js';
-import { asyncHandler } from './middleware/asyncHandler.js';
 
 // Load environment variables in development
 if (process.env.NODE_ENV !== 'production') dotenv.config();
 
+// Initialize express
 const app = express();
-const PORT = process.env.PORT || 3001;
+
+// Setup paths for both local and Vercel
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = path.join(__dirname, '..');
@@ -49,86 +37,76 @@ const securityConfig = {
 
 // Rate limiting configuration
 const rateLimitConfig = {
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per window
   message: { error: 'Too many requests, please try again later.' },
 };
 
-// Request logging middleware
-const requestLogger = (req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-  console.log('API Key present:', !!process.env.BLOCKFROST_API_KEY);
-  next();
-};
-
-// Basic middleware setup
+// Middleware setup
 app.use(cors());
 app.use(express.json());
 app.use(helmet(securityConfig));
 app.use(rateLimit(rateLimitConfig));
-app.use(requestLogger);
 
 // API routes (must come before static file serving)
 app.use('/api', validateApiConfig);
 app.use('/api/blocks', blockRoutes);
 app.use('/api/tx', transactionRoutes);
 
-// Serve static files with proper MIME types
-app.use(
-  '/js',
-  express.static(path.join(rootDir, 'public/js'), {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-      }
-    },
-  })
-);
-
-app.use(
-  '/css',
-  express.static(path.join(rootDir, 'public/css'), {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.css')) {
-        res.setHeader('Content-Type', 'text/css; charset=utf-8');
-      }
-    },
-  })
-);
-
-app.use('/images', express.static(path.join(rootDir, 'public/images')));
-
-// Serve HTML files from root and pages directory
-app.use(
-  express.static(rootDir, {
-    setHeaders: (res, filePath) => {
-      if (filePath.endsWith('.html')) {
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      }
-    },
-  })
-);
-
-// Development endpoints
+// Static file serving (only in development)
 if (process.env.NODE_ENV !== 'production') {
-  app.get('/api/debug', (req, res) => {
-    res.json({
-      envVars: {
-        hasApiKey: !!process.env.BLOCKFROST_API_KEY,
-        nodeEnv: process.env.NODE_ENV,
+  // Serve static files with proper MIME types
+  app.use(
+    '/js',
+    express.static(path.join(rootDir, 'public/js'), {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.js')) {
+          res.setHeader(
+            'Content-Type',
+            'application/javascript; charset=utf-8'
+          );
+        }
       },
-    });
-  });
+    })
+  );
+
+  app.use(
+    '/css',
+    express.static(path.join(rootDir, 'public/css'), {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.css')) {
+          res.setHeader('Content-Type', 'text/css; charset=utf-8');
+        }
+      },
+    })
+  );
+
+  app.use('/images', express.static(path.join(rootDir, 'public/images')));
+
+  // Serve HTML files
+  app.use(
+    express.static(rootDir, {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        }
+      },
+    })
+  );
 }
 
 // Error handler must be last
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-  console.log('Environment:', process.env.NODE_ENV);
-  console.log('API Key configured:', !!process.env.BLOCKFROST_API_KEY);
-});
+// Start server if in development
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+    console.log('Environment:', process.env.NODE_ENV);
+    console.log('API Key configured:', !!process.env.BLOCKFROST_API_KEY);
+  });
+}
 
+// Export the Express API
 export default app;

@@ -92,11 +92,7 @@
   ],
   "rewrites": [
     {
-      "source": "/api/blocks/(.*)",
-      "destination": "/server/server.js"
-    },
-    {
-      "source": "/api/tx/(.*)",
+      "source": "/api/(.*)",
       "destination": "/server/server.js"
     },
     {
