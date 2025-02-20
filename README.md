@@ -2,44 +2,59 @@
 
 A lightweight, high-performance block explorer for the Cardano blockchain built with vanilla JavaScript and the Blockfrost API. This application provides real-time blockchain data visualization with robust security features and a clean, responsive interface.
 
+```mermaid
+graph TD
+    A[Client Application] --> B[API Layer]
+    B --> C[Service Layer]
+    C --> D[Blockfrost API]
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#dfd,stroke:#333,stroke-width:2px
+    style D fill:#fdd,stroke:#333,stroke-width:2px
+```
+
 ## 🚀 Features
 
-- **Real-time Block Information**
+### Real-time Block Information
 
-  - Latest block data auto-refresh
-  - Detailed block information display
-  - Transaction list viewing with pagination
-  - Block navigation and search
-  - Advanced transaction details with UTXO tracking
-  - Address tracking and balance display
+- Latest block data auto-refresh
+- Detailed block information display
+- Transaction list viewing with pagination
+- Block navigation and search
+- Advanced transaction details with UTXO tracking
+- Address tracking and balance display
 
-- **Performance Optimized**
+### Performance Optimized
 
-  - Efficient DOM updates with modular renderers
-  - Debounced search and event handlers
-  - Optimized rendering cycles
-  - BigInt support for precise calculations
-  - Smart date formatting and validation
-  - Responsive UI components
+- Efficient DOM updates with modular renderers
+- Debounced search and event handlers
+- Optimized rendering cycles
+- BigInt support for precise calculations
+- Smart date formatting and validation
+- Responsive UI components
 
-- **Security First**
+### Security First
 
-  - Rate limiting protection
-  - Secure headers (Helmet)
-  - CORS protection
-  - API key validation
-  - Input validation and sanitization
-  - Error handling and logging
-  - Type checking and validation
+- Rate limiting protection
+- Secure headers (Helmet)
+- CORS protection
+- API key validation
+- Input validation and sanitization
+- Error handling and logging
+- Type checking and validation
 
-- **Clean UI/UX**
-  - Responsive design with mobile support
-  - Enhanced loading states
-  - Comprehensive error handling
-  - Clear navigation with breadcrumbs
-  - Smooth transitions
-  - Copy-to-clipboard functionality
-  - Warning/Error differentiation
+For detailed security information, see [SECURITY.md](SECURITY.md).
+
+### Clean UI/UX
+
+- Responsive design with mobile support
+- Enhanced loading states
+- Comprehensive error handling
+- Clear navigation with breadcrumbs
+- Smooth transitions
+- Copy-to-clipboard functionality
+- Warning/Error differentiation
 
 ## 🛠️ Prerequisites
 
@@ -62,7 +77,7 @@ A lightweight, high-performance block explorer for the Cardano blockchain built 
    npm install
    ```
 
-3. Create `.env` file in the root directory:
+3. Create `.env` file:
    ```env
    BLOCKFROST_API_KEY=your_api_key_here
    NODE_ENV=development
@@ -81,51 +96,43 @@ npm run dev
 
 ### Production Deployment (Vercel)
 
-The application is configured for serverless deployment on Vercel:
-
 1. Connect your repository to Vercel
 2. Set environment variables in Vercel dashboard
 3. Deploy using the provided `vercel.json` configuration
+
+For detailed deployment information, see [TECHNICAL.md](TECHNICAL.md#deployment-process).
 
 ## 🏗️ Project Structure
 
 ```
 cardano-block-explorer/
 ├── server/
-│   ├── middleware/
-│   │   ├── errorHandler.js    # Error handling and validation
-│   │   └── asyncHandler.js    # Async operation wrapper
-│   ├── services/
-│   │   └── blockfrost/       # Blockfrost API integration
-│   │       ├── blocks.js     # Block-related operations
-│   │       ├── transactions.js # Transaction operations
-│   │       ├── addresses.js   # Address operations
-│   │       ├── search.js     # Search functionality
-│   │       ├── utils.js      # Shared utilities
-│   │       └── index.js      # Service exports
-│   ├── utils/
-│   │   ├── APIError.js       # Custom error handling
-│   │   ├── responseFormatter.js # Response formatting
-│   │   └── logger.js         # Logging utility
-│   └── server.js             # Express server (development)
+│   ├── middleware/        # Error handling and validation
+│   ├── services/         # Blockfrost API integration
+│   │   └── blockfrost/  # Blockfrost service implementation
+│   ├── utils/           # Shared utilities
+│   └── server.js        # Express server
 ├── js/
-│   ├── api.js               # API client
-│   ├── utils.js             # Client utilities
-│   ├── main.js              # Application entry
-│   ├── details.js           # Details page logic
-│   ├── transaction.js       # Transaction handling
-│   ├── wallet.js            # Wallet functionality
-│   └── renderers/           # UI components
+│   ├── api.js           # API client
+│   ├── utils.js         # Client utilities
+│   ├── main.js          # Application entry
+│   └── renderers/       # UI components
 ├── css/
-│   ├── modules/            # CSS modules
-│   └── styles.css          # Main styles
-├── pages/                  # Static pages
-├── docs/                   # Documentation
-├── vercel.json            # Vercel configuration
-└── index.html             # Entry point
+│   ├── modules/        # CSS modules
+│   └── styles.css      # Main styles
+├── pages/              # Static pages
+├── docs/              # Documentation
+├── vercel.json        # Vercel configuration
+└── index.html         # Entry point
 ```
 
+For detailed architecture information, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ## 🔒 Security Features
+
+For comprehensive security documentation, see [SECURITY.md](SECURITY.md).
+
+Key security features include:
 
 - Rate limiting (100 requests per 15 minutes)
 - HTTP security headers via Helmet
@@ -139,12 +146,15 @@ cardano-block-explorer/
 ## 📚 Documentation
 
 - [Architecture Overview](docs/ARCHITECTURE.md)
+- [Technical Documentation](docs/TECHNICAL.md)
 - [API Documentation](docs/API.md)
 - [Security Guidelines](docs/SECURITY.md)
 
 ## 🧪 Testing
 
-Test the API endpoints:
+For detailed API testing information, see [API.md](API.md#testing).
+
+Quick test examples:
 
 ```bash
 # Get latest block
@@ -175,17 +185,26 @@ curl http://localhost:3001/api/blocks/search?q={query} | json_pp
    - Test thoroughly
 4. Submit a pull request
 
+For detailed contribution guidelines, see [TECHNICAL.md](TECHNICAL.md#contributing-guidelines).
+
 ## 📧 Contact
 
-James Barlay - jamesqbarclay@gmail.com
+James Barclay - jamesqbarclay@gmail.com
 
 ## 🗺️ Roadmap
+
+Current Status:
 
 - [x] Advanced transaction details
 - [x] Address tracking
 - [x] Search functionality
+
+Upcoming Features:
+
 - [ ] Asset information display
 - [ ] Stake pool integration
 - [ ] WebSocket updates
 - [ ] Caching layer
 - [ ] TypeScript migration
+
+For detailed enhancement plans, see [TECHNICAL.md](TECHNICAL.md#future-enhancements).

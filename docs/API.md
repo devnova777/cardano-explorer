@@ -1,5 +1,25 @@
 # API Documentation
 
+> For detailed security implementations, see [SECURITY.md](SECURITY.md)
+
+## Overview
+
+```mermaid
+graph TD
+    A[Client] --> B[API Gateway]
+    B --> C{Endpoints}
+    C --> D[Blocks]
+    C --> E[Transactions]
+    C --> F[Search]
+    C --> G[Address]
+    D --> H[Latest Block]
+    D --> I[Block Details]
+    D --> J[Block Transactions]
+    E --> K[Transaction Details]
+    F --> L[Global Search]
+    G --> M[Address Details]
+```
+
 ## Base URL
 
 ```
@@ -7,13 +27,47 @@ Development: http://localhost:3001/api
 Production: https://your-domain.vercel.app/api
 ```
 
+## Request Flow
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as API Gateway
+    participant V as Validation
+    participant S as Service
+    participant B as Blockfrost
+
+    C->>A: HTTP Request
+    A->>V: Validate Request
+    V-->>A: Validation Result
+    A->>S: Process Request
+    S->>B: Fetch Data
+    B-->>S: Return Data
+    S-->>A: Format Response
+    A-->>C: HTTP Response
+```
+
+## Authentication
+
+For detailed authentication implementation, see [SECURITY.md](SECURITY.md#authentication-system).
+
+## Rate Limiting
+
+For detailed rate limiting configuration, see [SECURITY.md](SECURITY.md#rate-limiting).
+
+Headers returned:
+
+- `X-RateLimit-Limit`: Maximum requests
+- `X-RateLimit-Remaining`: Remaining requests
+- `X-RateLimit-Reset`: Time until reset
+
 ## Endpoints
 
 ### Blocks
 
 #### Get Latest Block
 
-```
+```http
 GET /blocks/latest
 ```
 
@@ -44,7 +98,7 @@ Response:
 
 #### Get Block Details
 
-```
+```http
 GET /blocks/:hash
 ```
 
@@ -56,7 +110,7 @@ Response: Same as latest block
 
 #### Get Block by Height
 
-```
+```http
 GET /blocks/height/:height
 ```
 
@@ -75,7 +129,7 @@ Response:
 
 #### Get Block Transactions
 
-```
+```http
 GET /blocks/:hash/transactions
 ```
 
@@ -109,7 +163,7 @@ Response:
 
 #### Get Transaction Details
 
-```
+```http
 GET /tx/:hash
 ```
 
@@ -166,7 +220,7 @@ Response:
 
 #### Global Search
 
-```
+```http
 GET /blocks/search?q=:query
 ```
 
@@ -188,6 +242,48 @@ Response:
 }
 ```
 
+### Address
+
+#### Get Address Details
+
+```http
+GET /blocks/address/:address
+```
+
+Parameters:
+
+- `address`: Cardano address
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "address": "string",
+    "amount": "string",
+    "stake_address": "string",
+    "type": "string",
+    "utxos": [
+      {
+        "tx_hash": "string",
+        "output_index": "number",
+        "amount": "string",
+        "assets": []
+      }
+    ],
+    "transactions": [
+      {
+        "tx_hash": "string",
+        "block_height": "number",
+        "block_time": "number",
+        "block_hash": "string"
+      }
+    ]
+  }
+}
+```
+
 ## Error Handling
 
 All endpoints return errors in the following format:
@@ -195,15 +291,23 @@ All endpoints return errors in the following format:
 ```json
 {
   "success": false,
-  "error": "Error message",
-  "status": "number"
+  "error": {
+    "message": "string",
+    "type": "string",
+    "status": "number"
+  }
 }
 ```
 
-Common error codes:
+### Error Types
+
+For detailed error handling implementation, see [SECURITY.md](SECURITY.md#error-handling).
+
+Common status codes:
 
 - 400: Bad Request (invalid input)
-- 403: Forbidden (invalid API key)
+- 401: Unauthorized
+- 403: Forbidden
 - 404: Not Found
 - 429: Too Many Requests
 - 500: Internal Server Error
@@ -237,7 +341,7 @@ const transaction = await getTransactionDetails(txHash);
 const results = await search(query);
 ```
 
-### Response Formatting
+### Response Handling
 
 ```javascript
 import { formatSuccess, formatError } from './utils/responseFormatter.js';
@@ -272,19 +376,40 @@ try {
 }
 ```
 
-## Rate Limiting
+## Pagination
 
-- Limit: 100 requests per 15 minutes
-- Headers:
-  - `X-RateLimit-Limit`: Maximum requests
-  - `X-RateLimit-Remaining`: Remaining requests
-  - `X-RateLimit-Reset`: Time until reset
+When applicable, endpoints support pagination with the following parameters:
 
-## Security
+- `page`: Page number (default: 1)
+- `limit`: Items per page (default: 10, max: 100)
 
-- All endpoints require HTTPS in production
-- API key required for Blockfrost operations
-- Input validation on all parameters
-- Rate limiting protection
-- CORS protection
-- Security headers via Helmet
+Response includes pagination metadata:
+
+```json
+{
+  "success": true,
+  "data": [],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 10,
+    "hasNext": true,
+    "hasPrevious": false,
+    "totalItems": 100
+  }
+}
+```
+
+## WebSocket Support
+
+Future enhancement: See [SECURITY.md](SECURITY.md#future-security-enhancements) for planned WebSocket implementation details.
+
+## API Versioning
+
+Current version: v1
+Format: `/api/v1/{endpoint}`
+
+## Additional Resources
+
+- [Security Documentation](SECURITY.md)
+- [Architecture Documentation](ARCHITECTURE.md)
+- [Technical Documentation](TECHNICAL.md)
