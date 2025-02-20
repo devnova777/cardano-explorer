@@ -1,4 +1,24 @@
-import { SVG_ICONS, formatAda, formatDate } from '../utils.js';
+// shared.js
+
+// First, let's define SVG_ICONS here since it's UI-specific
+export const SVG_ICONS = {
+  copy: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+  </svg>`,
+  rightArrow: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M9 18l6-6-6-6"/>
+  </svg>`,
+  leftArrow: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M15 18l-6-6 6-6"/>
+  </svg>`,
+  checkmark: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M20 6L9 17l-5-5"/>
+  </svg>`,
+};
+
+// Import only what we need from utils.js
+import { formatAda, formatDate } from '../utils.js';
 
 /**
  * Renders a detail row with label and value
@@ -49,4 +69,4 @@ export const renderLoading = (message = 'Loading...') => `
   </div>
 `;
 
-export { SVG_ICONS, formatAda, formatDate };
+export { formatAda, formatDate };

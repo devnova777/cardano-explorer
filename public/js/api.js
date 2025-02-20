@@ -1,16 +1,5 @@
 /**
  * Cardano Block Explorer API Client
- *
- * Provides a centralized interface for all API communications with the backend server.
- * Implements consistent error handling and response normalization.
- *
- * Features:
- * - Unified error handling and mapping
- * - Response normalization
- * - Automatic query parameter handling
- * - Type-safe endpoint definitions
- *
- * @module api
  */
 
 const API_CONFIG = {
@@ -41,6 +30,12 @@ const ERROR_MESSAGES = {
   default: 'An unexpected error occurred. Please try again.',
 };
 
+// Get the base URL depending on environment
+const getBaseUrl = () => {
+  const isProduction = window.location.hostname !== 'localhost';
+  return isProduction ? window.location.origin : '';
+};
+
 const createQueryString = (params = {}) => {
   const query = new URLSearchParams(
     Object.entries(params)
@@ -60,12 +55,10 @@ const getFriendlyErrorMessage = (error) => {
 const handleApiError = (error, context = {}) => {
   console.error('API error:', { ...context, error });
 
-  // If it's already an enhanced error, just throw it
   if (error.status && error.message) {
     throw error;
   }
 
-  // Create enhanced error with proper message and status
   const enhancedError = new Error(getFriendlyErrorMessage(error));
   enhancedError.status = error.status || 500;
   enhancedError.originalError = error;
@@ -75,10 +68,21 @@ const handleApiError = (error, context = {}) => {
 
 async function apiRequest(endpoint, options = {}) {
   try {
-    console.log('Making API request:', { endpoint, options });
-    const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, options);
+    const baseUrl = getBaseUrl();
+    const url = `${baseUrl}${API_CONFIG.BASE_URL}${endpoint}`;
+
+    console.log('Making API request:', { url, options });
+
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    });
+
     const data = await response.json();
-    console.log('API response:', { endpoint, status: response.status, data });
+    console.log('API response:', { url, status: response.status, data });
 
     if (!response.ok) {
       const error = new Error(
@@ -131,23 +135,17 @@ export async function getBlockDetails(hashOrHeight) {
 
   try {
     if (isHeight) {
-      // For height, first get the block hash
-      console.log('Getting block hash for height:', heightNum);
       const endpoint = API_CONFIG.ENDPOINTS.BLOCK_BY_HASH(heightNum);
       const blockHashes = await apiRequest(endpoint);
 
-      // Validate block hashes response
       if (!Array.isArray(blockHashes) || blockHashes.length === 0) {
         throw new Error('Block not found at this height');
       }
 
-      // Get full block details using the first hash
-      console.log('Getting block details for hash:', blockHashes[0]);
       return await apiRequest(
         API_CONFIG.ENDPOINTS.BLOCK_BY_HASH(blockHashes[0])
       );
     } else {
-      // For hash, directly get block details
       return await apiRequest(API_CONFIG.ENDPOINTS.BLOCK_BY_HASH(hashOrHeight));
     }
   } catch (error) {
@@ -163,17 +161,23 @@ export async function getBlockDetails(hashOrHeight) {
   }
 }
 
+export async function getBlocks(
+  page = 1,
+  limit = API_CONFIG.DEFAULT_PAGE_SIZE
+) {
+  const query = createQueryString({ page, limit });
+  return apiRequest(`${API_CONFIG.ENDPOINTS.BLOCKS}${query}`);
+}
+
 export async function getBlockTransactions(blockHash) {
   if (!blockHash || !/^[0-9a-fA-F]{64}$/.test(blockHash)) {
     throw new Error('Invalid block hash format');
   }
 
-  console.log('Getting block transactions:', blockHash);
   try {
     const data = await apiRequest(
       API_CONFIG.ENDPOINTS.BLOCK_TRANSACTIONS(blockHash)
     );
-    console.log('Block transactions response:', data);
 
     if (!data || !data.transactions) {
       console.warn('Unexpected response format:', data);
@@ -198,14 +202,6 @@ export async function getBlockTransactions(blockHash) {
   }
 }
 
-export async function getBlocks(
-  page = 1,
-  limit = API_CONFIG.DEFAULT_PAGE_SIZE
-) {
-  const query = createQueryString({ page, limit });
-  return apiRequest(`${API_CONFIG.ENDPOINTS.BLOCKS}${query}`);
-}
-
 export async function getTransactionDetails(txHash) {
   console.log('Getting transaction details for:', txHash);
   const data = await apiRequest(API_CONFIG.ENDPOINTS.TRANSACTION(txHash));
@@ -215,40 +211,16 @@ export async function getTransactionDetails(txHash) {
 
 export async function search(query) {
   try {
-    // Clean up the query - remove commas if it's a number
     const cleanQuery = query
       .trim()
       .replace(/^(\d+,?)+$/, (match) => match.replace(/,/g, ''));
-    console.log('Initiating search with query:', {
-      original: query,
-      cleaned: cleanQuery,
-    });
 
     const endpoint = `${API_CONFIG.ENDPOINTS.SEARCH}${createQueryString({
       q: cleanQuery,
     })}`;
-    console.log('Search endpoint:', endpoint);
 
-    const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`);
-    console.log('Search response status:', response.status);
-
-    const data = await response.json();
-    console.log('Search response data:', data);
-
-    if (!response.ok) {
-      const error = new Error(
-        data.error?.message || data.error || 'Search request failed'
-      );
-      error.status = response.status;
-      error.data = data;
-      throw error;
-    }
-
-    if (!data.success || !data.data) {
-      throw new Error(data.error || 'Invalid search response format');
-    }
-
-    return data.data;
+    const data = await apiRequest(endpoint);
+    return data;
   } catch (error) {
     console.error('Search error details:', {
       message: error.message,
@@ -264,17 +236,10 @@ export async function search(query) {
   }
 }
 
-/**
- * Get address details including balance and stake address
- * @param {string} address - The address to get details for
- * @returns {Promise<Object>} Address details
- */
 export async function getAddressDetails(address) {
   try {
-    // Fetch basic address info first
     const details = await apiRequest(API_CONFIG.ENDPOINTS.ADDRESS(address));
 
-    // Only fetch additional data if we have basic details
     if (details) {
       const [utxos, txs] = await Promise.all([
         apiRequest(API_CONFIG.ENDPOINTS.ADDRESS(address)),
