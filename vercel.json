@@ -26,38 +26,34 @@
       "dest": "/server/server.js"
     },
     {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/js/(.*)",
-      "dest": "/public/js/$1",
+      "src": "^/js/(.*)",
       "headers": {
-        "Content-Type": "application/javascript; charset=utf-8",
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
+        "cache-control": "public, max-age=31536000, immutable",
+        "content-type": "application/javascript; charset=utf-8"
+      },
+      "dest": "/public/js/$1"
     },
     {
-      "src": "/css/(.*)",
-      "dest": "/public/css/$1",
+      "src": "^/css/(.*)",
       "headers": {
-        "Content-Type": "text/css; charset=utf-8",
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
+        "cache-control": "public, max-age=31536000, immutable",
+        "content-type": "text/css; charset=utf-8"
+      },
+      "dest": "/public/css/$1"
     },
     {
-      "src": "/images/(.*)",
-      "dest": "/public/images/$1",
+      "src": "^/images/(.*)",
       "headers": {
-        "Cache-Control": "public, max-age=31536000, immutable"
-      }
+        "cache-control": "public, max-age=31536000, immutable"
+      },
+      "dest": "/public/images/$1"
     },
     {
-      "src": "/pages/(.*)",
+      "src": "^/pages/(.*)",
       "dest": "/pages/$1"
     },
     {
-      "src": "/(.*)",
-      "dest": "/$1"
+      "handle": "filesystem"
     }
   ],
   "env": {
