@@ -1,5 +1,4 @@
-import { SVG_ICONS } from '../utils.js';
-import { formatAda, formatDate } from '../utils.js';
+import { SVG_ICONS, formatAda, formatDate } from '../utils.js';
 
 /**
  * Renders a detail row with label and value
