@@ -59,7 +59,7 @@
       ]
     },
     {
-      "source": "/public/js/(.*)",
+      "source": "/js/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -72,7 +72,7 @@
       ]
     },
     {
-      "source": "/public/css/(.*)",
+      "source": "/css/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -85,7 +85,7 @@
       ]
     },
     {
-      "source": "/public/images/(.*)",
+      "source": "/images/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -98,6 +98,18 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/$1"
+    },
+    {
+      "source": "/js/(.*)",
+      "destination": "/public/js/$1"
+    },
+    {
+      "source": "/css/(.*)",
+      "destination": "/public/css/$1"
+    },
+    {
+      "source": "/images/(.*)",
+      "destination": "/public/images/$1"
     }
   ]
 }
