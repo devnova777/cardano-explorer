@@ -4,7 +4,7 @@
   "trailingSlash": false,
   "builds": [
     {
-      "src": "server/server.js",
+      "src": "api/**/*.js",
       "use": "@vercel/node"
     },
     {
@@ -12,15 +12,7 @@
       "use": "@vercel/static"
     },
     {
-      "src": "css/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "js/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "images/**",
+      "src": "public/**/*",
       "use": "@vercel/static"
     }
   ],
@@ -72,7 +64,7 @@
       "headers": [
         {
           "key": "Content-Type",
-          "value": "application/javascript"
+          "value": "application/javascript; charset=utf-8"
         },
         {
           "key": "Cache-Control",
@@ -85,11 +77,11 @@
       "headers": [
         {
           "key": "Content-Type",
-          "value": "text/css"
+          "value": "text/css; charset=utf-8"
         },
         {
           "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
+          "value": "public, max-age=31536000, immutable"
         }
       ]
     },
@@ -105,16 +97,20 @@
   ],
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/server/server.js"
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
     },
     {
-      "source": "/pages/:path*",
-      "destination": "/pages/:path*"
+      "source": "/js/:path*",
+      "destination": "/public/js/:path*"
     },
     {
-      "source": "/:path*",
-      "destination": "/:path*"
+      "source": "/css/:path*",
+      "destination": "/public/css/:path*"
+    },
+    {
+      "source": "/images/:path*",
+      "destination": "/public/images/:path*"
     }
   ]
 }
