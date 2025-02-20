@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the security measures, implementation details, and future security roadmap for the Cardano Block Explorer. For API-specific security measures and endpoint documentation, see [API.md](API.md).
+This document outlines the security measures, implementation details, and future security roadmap for the Cardano Block Explorer. For API-specific security measures and endpoint documentation, see [API.md](/docs/API.md).
 
 ```mermaid
 flowchart TD
@@ -61,7 +61,7 @@ app.use(
     permittedCrossDomainPolicies: { permittedPolicies: 'none' },
     crossOriginEmbedderPolicy: true,
     crossOriginOpenerPolicy: { policy: 'same-origin' },
-    crossOriginResourcePolicy: { policy: 'same-origin' }
+    crossOriginResourcePolicy: { policy: 'same-origin' },
   })
 );
 ```
@@ -71,9 +71,10 @@ app.use(
 ```javascript
 app.use(
   cors({
-    origin: process.env.NODE_ENV === 'production'
-      ? process.env.ALLOWED_ORIGINS.split(',')
-      : '*',
+    origin:
+      process.env.NODE_ENV === 'production'
+        ? process.env.ALLOWED_ORIGINS.split(',')
+        : '*',
     methods: ['GET'],
     allowedHeaders: ['Content-Type', 'Accept'],
     credentials: false,
@@ -134,7 +135,7 @@ const sanitizeError = (error) => ({
   message: error.message,
   status: error.status,
   type: error.type,
-  ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
+  ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
 });
 ```
 
@@ -152,7 +153,7 @@ app.use((req, res, next) => {
       path: req.path,
       status: res.statusCode,
       duration,
-      ip: req.ip
+      ip: req.ip,
     });
   });
   next();
@@ -168,7 +169,7 @@ const securityLogger = {
       level: 'security_warning',
       timestamp: new Date().toISOString(),
       event,
-      ...context
+      ...context,
     });
   },
   alert: (event, context = {}) => {
@@ -177,9 +178,9 @@ const securityLogger = {
       timestamp: new Date().toISOString(),
       event,
       ...context,
-      environment: process.env.NODE_ENV
+      environment: process.env.NODE_ENV,
     });
-  }
+  },
 };
 ```
 
@@ -192,7 +193,7 @@ sequenceDiagram
     participant C as Client
     participant A as Auth Service
     participant S as Server
-    
+
     C->>A: Request Token
     A->>A: Validate Credentials
     A-->>C: JWT Token
@@ -202,13 +203,14 @@ sequenceDiagram
 ```
 
 #### Implementation Plan
+
 ```javascript
 // JWT Authentication
 const authMiddleware = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) throw new Error('No token provided');
-    
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
@@ -237,13 +239,11 @@ const advancedRateLimiter = {
   },
   keyGenerator: (req) => {
     // Use combination of IP and user ID if available
-    return req.user?.id 
-      ? `${req.ip}-${req.user.id}`
-      : req.ip;
+    return req.user?.id ? `${req.ip}-${req.user.id}` : req.ip;
   },
   handler: (req, res) => {
     throw new APIError('Rate limit exceeded', 429);
-  }
+  },
 };
 ```
 
@@ -275,6 +275,7 @@ class APIKeyManager {
 ## Security Checklist
 
 ### Server-side
+
 - [x] Rate limiting with headers
 - [x] Strict security headers
 - [x] Environment-based CORS
@@ -287,6 +288,7 @@ class APIKeyManager {
 - [x] Secure error handling
 
 ### Client-side
+
 - [x] Secure API communication
 - [x] Input validation
 - [x] Type checking
@@ -299,18 +301,21 @@ class APIKeyManager {
 ## Implementation Timeline
 
 ### Phase 1 (Immediate)
+
 - Enhanced rate limiting implementation
 - Additional security headers
 - Improved input validation
 - Extended error logging
 
 ### Phase 2 (1-2 Months)
+
 - Authentication system
 - Role-based authorization
 - Security monitoring dashboard
 - Extended logging capabilities
 
 ### Phase 3 (2-3 Months)
+
 - API key rotation system
 - Advanced rate limiting
 - Real-time security monitoring
@@ -319,18 +324,21 @@ class APIKeyManager {
 ## Regular Security Practices
 
 ### 1. Security Audits
+
 - Weekly dependency vulnerability scans
 - Monthly code security reviews
 - Quarterly penetration testing
 - Annual comprehensive security audit
 
 ### 2. Monitoring
+
 - Real-time security event tracking
 - Rate limit monitoring
 - Error rate tracking
 - API usage patterns analysis
 
 ### 3. Incident Response
+
 - Clear incident classification
 - Defined response procedures
 - Communication protocols
@@ -339,18 +347,21 @@ class APIKeyManager {
 ## Best Practices Checklist
 
 ### Development
+
 - [ ] Regular dependency updates
 - [ ] Security vulnerability scanning
 - [ ] Code review with security focus
 - [ ] Automated security testing
 
 ### Deployment
+
 - [ ] Environment validation
 - [ ] Security header verification
 - [ ] Rate limit testing
 - [ ] Error handling verification
 
 ### Monitoring
+
 - [ ] Log analysis
 - [ ] Security event tracking
 - [ ] Performance monitoring
@@ -358,6 +369,6 @@ class APIKeyManager {
 
 ## Additional Resources
 
-- [API Documentation](API.md)
-- [Architecture Overview](ARCHITECTURE.md)
-- [Technical Documentation](TECHNICAL.md)
+- [API Documentation](/docs/API.md)
+- [Architecture Overview](/docs/ARCHITECTURE.md)
+- [Technical Documentation](/docs/TECHNICAL.md)

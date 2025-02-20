@@ -1,6 +1,6 @@
 # Cardano Block Explorer Technical Documentation
 
-> For high-level architecture overview, see [ARCHITECTURE.md](ARCHITECTURE.md)
+> For high-level architecture overview, see [ARCHITECTURE.md](/docs/ARCHITECTURE.md)
 
 ## System Components
 
@@ -337,6 +337,7 @@ const errorLogger = (error, req, res, next) => {
 1. Branch naming: `feature/`, `bugfix/`, `hotfix/`
 2. Commit message format: `type(scope): description`
 3. Pull request template:
+
    ```markdown
    ## Description
 

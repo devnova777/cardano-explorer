@@ -1,6 +1,6 @@
 # Cardano Block Explorer Architecture
 
-> For detailed technical specifications and implementation details, see [TECHNICAL.md](TECHNICAL.md)
+> For detailed technical specifications and implementation details, see [TECHNICAL.md](/docs/TECHNICAL.md)
 
 ## Overview
 
@@ -77,7 +77,7 @@ graph LR
 
 ## Security Implementation
 
-For detailed security implementations and configurations, see [TECHNICAL.md](TECHNICAL.md#security-best-practices)
+For detailed security implementations and configurations, see [TECHNICAL.md](/docs/TECHNICAL.md#security-best-practices)
 
 Key features:
 
@@ -128,7 +128,7 @@ Key features:
 
 ## Contributing
 
-For detailed contribution guidelines and technical specifications, see [TECHNICAL.md](TECHNICAL.md#contributing-guidelines)
+For detailed contribution guidelines and technical specifications, see [TECHNICAL.md](/docs/TECHNICAL.md#contributing-guidelines)
 
 1. Fork the repository
 2. Create your feature branch
@@ -138,9 +138,9 @@ For detailed contribution guidelines and technical specifications, see [TECHNICA
 
 ## Documentation
 
-- [Technical Documentation](TECHNICAL.md)
-- [API Documentation](API.md)
-- [Security Guidelines](SECURITY.md)
+- [Technical Documentation](/docs/TECHNICAL.md)
+- [API Documentation](/docs/API.md)
+- [Security Guidelines](/docs/SECURITY.md)
 
 ## Contact
 

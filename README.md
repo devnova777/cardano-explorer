@@ -39,7 +39,7 @@ graph TD
 - Error handling and logging
 - Type checking and validation
 
-For detailed security information, see [SECURITY.md](SECURITY.md).
+For detailed security information, see [SECURITY.md](docs/SECURITY.md).
 
 ### Clean UI/UX
 
@@ -62,7 +62,7 @@ For detailed security information, see [SECURITY.md](SECURITY.md).
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/cardano-block-explorer.git
+   git clone https://github.com/Jimmyh-world/cardano-explorer.git
    cd cardano-block-explorer
    ```
 
@@ -95,7 +95,7 @@ npm run dev
 2. Set environment variables in Vercel dashboard
 3. Deploy using the provided `vercel.json` configuration
 
-For detailed deployment information, see [TECHNICAL.md](TECHNICAL.md#deployment-process).
+For detailed deployment information, see [TECHNICAL.md](/docs/TECHNICAL.md#deployment-process).
 
 ## 🏗️ Project Structure
 
@@ -121,11 +121,11 @@ cardano-block-explorer/
 └── index.html         # Entry point
 ```
 
-For detailed architecture information, see [ARCHITECTURE.md](ARCHITECTURE.md).
+For detailed architecture information, see [ARCHITECTURE.md](/docs/ARCHITECTURE.md).
 
 ## 🔒 Security Features
 
-For comprehensive security documentation, see [SECURITY.md](SECURITY.md).
+For comprehensive security documentation, see [SECURITY.md](/docs/SECURITY.md).
 
 Key security features include:
 
@@ -147,7 +147,7 @@ Key security features include:
 
 ## 🧪 Testing
 
-For detailed API testing information, see [API.md](API.md#testing).
+For detailed API testing information, see [API.md](/docs/API.md#testing).
 
 Quick test examples:
 
@@ -180,7 +180,7 @@ curl http://localhost:3001/api/blocks/search?q={query} | json_pp
    - Test thoroughly
 4. Submit a pull request
 
-For detailed contribution guidelines, see [TECHNICAL.md](TECHNICAL.md#contributing-guidelines).
+For detailed contribution guidelines, see [TECHNICAL.md](/docs/TECHNICAL.md#contributing-guidelines).
 
 ## 📧 Contact
 
@@ -202,4 +202,4 @@ Upcoming Features:
 - [ ] Caching layer
 - [ ] TypeScript migration
 
-For detailed enhancement plans, see [TECHNICAL.md](TECHNICAL.md#future-enhancements).
+For detailed enhancement plans, see [TECHNICAL.md](/docs/TECHNICAL.md#future-enhancements).

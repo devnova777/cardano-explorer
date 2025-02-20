@@ -1,6 +1,6 @@
 # API Documentation
 
-> For detailed security implementations, see [SECURITY.md](SECURITY.md)
+> For detailed security implementations, see [SECURITY.md](/docs/SECURITY.md)
 
 ## Overview
 
@@ -49,11 +49,11 @@ sequenceDiagram
 
 ## Authentication
 
-For detailed authentication implementation, see [SECURITY.md](SECURITY.md#authentication-system).
+For detailed authentication implementation, see [SECURITY.md](/docs/SECURITY.md#authentication-system).
 
 ## Rate Limiting
 
-For detailed rate limiting configuration, see [SECURITY.md](SECURITY.md#rate-limiting).
+For detailed rate limiting configuration, see [SECURITY.md](/docs/SECURITY.md#rate-limiting).
 
 Headers returned:
 
@@ -301,7 +301,7 @@ All endpoints return errors in the following format:
 
 ### Error Types
 
-For detailed error handling implementation, see [SECURITY.md](SECURITY.md#error-handling).
+For detailed error handling implementation, see [SECURITY.md](/docs/SECURITY.md#error-handling).
 
 Common status codes:
 
@@ -401,7 +401,7 @@ Response includes pagination metadata:
 
 ## WebSocket Support
 
-Future enhancement: See [SECURITY.md](SECURITY.md#future-security-enhancements) for planned WebSocket implementation details.
+Future enhancement: See [SECURITY.md](/docs/SECURITY.md#future-security-enhancements) for planned WebSocket implementation details.
 
 ## API Versioning
 
@@ -410,6 +410,6 @@ Format: `/api/v1/{endpoint}`
 
 ## Additional Resources
 
-- [Security Documentation](SECURITY.md)
-- [Architecture Documentation](ARCHITECTURE.md)
-- [Technical Documentation](TECHNICAL.md)
+- [Security Documentation](/docs/SECURITY.md)
+- [Architecture Documentation](/docs/ARCHITECTURE.md)
+- [Technical Documentation](/docs/TECHNICAL.md)
