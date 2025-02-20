@@ -952,17 +952,57 @@ button {
 }
 
 @media (max-width: 767px) {
+  .transaction-content {
+    padding: var(--spacing-sm);
+  }
+
+  .transaction-header {
+    padding: var(--spacing-sm);
+  }
+
+  .transaction-summary {
+    padding: var(--spacing-sm);
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+
+  .summary-item {
+    padding: var(--spacing-sm);
+  }
+
+  .transaction-io {
+    grid-template-columns: 1fr;
+  }
+
+  .io-item {
+    padding: var(--spacing-sm);
+  }
+
   .io-item-header {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .address-value {
-    font-size: clamp(0.65rem, 1.5vw, 0.8rem);
+    gap: var(--spacing-xs);
   }
 
   .io-amount {
-    font-size: clamp(0.75rem, 2vw, 0.9rem);
+    font-size: var(--text-base);
+  }
+
+  .hash-container {
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .hash-value {
+    font-size: var(--text-sm);
+    word-break: break-all;
+  }
+
+  .view-tx-btn {
+    width: 100%;
+    justify-content: center;
   }
 }
 
