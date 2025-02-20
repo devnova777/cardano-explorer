@@ -24,6 +24,7 @@ import transactionRoutes from './routes/transactions.js';
 import { validateApiConfig, errorHandler } from './middleware/errorHandler.js';
 import { asyncHandler } from './middleware/asyncHandler.js';
 
+// Load environment variables in development
 if (process.env.NODE_ENV !== 'production') dotenv.config();
 
 const app = express();
@@ -32,6 +33,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
+// Security configuration
 const securityConfig = {
   contentSecurityPolicy: {
     directives: {
@@ -45,41 +47,67 @@ const securityConfig = {
   },
 };
 
+// Rate limiting configuration
 const rateLimitConfig = {
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: { error: 'Too many requests, please try again later.' },
 };
 
+// Request logging middleware
 const requestLogger = (req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
   console.log('API Key present:', !!process.env.BLOCKFROST_API_KEY);
   next();
 };
 
-// Middleware setup
+// Basic middleware setup
 app.use(cors());
 app.use(express.json());
 app.use(helmet(securityConfig));
 app.use(rateLimit(rateLimitConfig));
+app.use(requestLogger);
 
-// Configure proper MIME types
+// API routes (must come before static file serving)
+app.use('/api', validateApiConfig);
+app.use('/api/blocks', blockRoutes);
+app.use('/api/tx', transactionRoutes);
+
+// Serve static files with proper MIME types
 app.use(
-  express.static(rootDir, {
-    setHeaders: (res, path) => {
-      if (path.endsWith('.js')) {
+  '/js',
+  express.static(path.join(rootDir, 'public/js'), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.js')) {
         res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
       }
     },
   })
 );
 
-app.use('/api', validateApiConfig);
-app.use(requestLogger);
+app.use(
+  '/css',
+  express.static(path.join(rootDir, 'public/css'), {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      }
+    },
+  })
+);
 
-// Route mounting
-app.use('/api/blocks', blockRoutes);
-app.use('/api/tx', transactionRoutes);
+app.use('/images', express.static(path.join(rootDir, 'public/images')));
+
+// Serve HTML files from root and pages directory
+app.use(
+  express.static(rootDir, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      }
+    },
+  })
+);
 
 // Development endpoints
 if (process.env.NODE_ENV !== 'production') {
@@ -93,9 +121,14 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Error handler
+// Error handler must be last
 app.use(errorHandler);
 
-app.listen(PORT, () =>
-  console.log(`Server running at http://localhost:${PORT}`)
-);
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('API Key configured:', !!process.env.BLOCKFROST_API_KEY);
+});
+
+export default app;

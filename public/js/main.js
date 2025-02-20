@@ -33,7 +33,7 @@ const CONFIG = {
   MIN_SEARCH_LENGTH: 3,
   ELEMENTS: {
     LATEST_BLOCK: 'latest-block-info',
-    BLOCK_LIST: 'block-list',
+    BLOCK_LIST: 'blocks-container',
     CONTENT: 'block-content',
     FETCH_BLOCK: 'fetch-block',
     AUTO_REFRESH: 'auto-refresh',
