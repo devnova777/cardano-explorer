@@ -12,15 +12,7 @@
       "use": "@vercel/static"
     },
     {
-      "src": "css/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "js/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "images/**",
+      "src": "public/**",
       "use": "@vercel/static"
     }
   ],
@@ -68,7 +60,7 @@
       ]
     },
     {
-      "source": "/js/(.*)",
+      "source": "/public/js/(.*)",
       "headers": [
         {
           "key": "Content-Type",
@@ -81,7 +73,7 @@
       ]
     },
     {
-      "source": "/css/(.*)",
+      "source": "/public/css/(.*)",
       "headers": [
         {
           "key": "Content-Type",
@@ -94,7 +86,7 @@
       ]
     },
     {
-      "source": "/images/(.*)",
+      "source": "/public/images/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

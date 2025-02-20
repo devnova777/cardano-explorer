@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cardano Block Explorer - Details</title>
-    <link rel="stylesheet" href="../css/styles.css">
-    <link rel="icon" type="image/svg+xml" href="../images/favicon.svg">
+    <link rel="stylesheet" href="/public/css/styles.css">
+    <link rel="icon" type="image/svg+xml" href="/public/images/favicon.svg">
 </head>
 
 <body>
@@ -14,15 +14,15 @@
         <header class="header">
             <h1>
                 <div class="header-icons">
-                    <img src="../images/cardano-ada-logo.png" alt="Cardano Logo" class="logo">
-                    <img src="../images/Explore.svg" alt="Explorer Icon" class="explorer-icon">
+                    <img src="/public/images/cardano-ada-logo.png" alt="Cardano Logo" class="logo">
+                    <img src="/public/images/Explore.svg" alt="Explorer Icon" class="explorer-icon">
                 </div>
                 <span class="header-title">Cardano Explorer</span>
             </h1>
             <div class="search-bar">
                 <input type="text" id="search-input" placeholder="Search block, transaction, wallet or NFT">
                 <button id="search-btn" class="search-btn">
-                    <img src="../images/Explore.svg" alt="Search" class="search-icon">
+                    <img src="/public/images/Explore.svg" alt="Search" class="search-icon">
                     Search
                 </button>
             </div>
@@ -56,21 +56,21 @@
                 <span>© 2025 James Barclay</span>
                 <a href="https://github.com/Jimmyh-world/cardano-explorer" target="_blank" rel="noopener noreferrer"
                     class="github-btn">
-                    <img src="../images/github-logo.png" alt="GitHub" class="github-logo">
+                    <img src="/public/images/github-logo.png" alt="GitHub" class="github-logo">
                     GitHub
                 </a>
             </div>
         </footer>
     </div>
     <!-- Load dependencies first -->
-    <script type="module" src="../js/utils.js"></script>
-    <script type="module" src="../js/api.js"></script>
-    <script type="module" src="../js/renderers/details.js"></script>
-    <script type="module" src="../js/renderers/blocks.js"></script>
-    <script type="module" src="../js/renderers/transactions.js"></script>
-    <script type="module" src="../js/renderers/shared.js"></script>
+    <script type="module" src="/public/js/utils.js"></script>
+    <script type="module" src="/public/js/api.js"></script>
+    <script type="module" src="/public/js/renderers/details.js"></script>
+    <script type="module" src="/public/js/renderers/blocks.js"></script>
+    <script type="module" src="/public/js/renderers/transactions.js"></script>
+    <script type="module" src="/public/js/renderers/shared.js"></script>
     <!-- Load main script last -->
-    <script type="module" src="../js/details.js"></script>
+    <script type="module" src="/public/js/details.js"></script>
 </body>
 
 </html>
