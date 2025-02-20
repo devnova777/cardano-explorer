@@ -20,7 +20,7 @@ import { dirname } from 'path';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import blockRoutes from './routes/blocks.js';
-import { getTransactionDetails } from './services/blockfrost.js';
+import transactionRoutes from './routes/transactions.js';
 import { validateApiConfig, errorHandler } from './middleware/errorHandler.js';
 import { asyncHandler } from './middleware/asyncHandler.js';
 
@@ -57,17 +57,6 @@ const requestLogger = (req, res, next) => {
   next();
 };
 
-const txRouter = express.Router();
-txRouter.get(
-  '/:hash',
-  asyncHandler(async (req, res) => {
-    console.log('TX Router hit:', req.params);
-    const { hash } = req.params;
-    const data = await getTransactionDetails(hash);
-    res.json({ success: true, data });
-  })
-);
-
 // Middleware setup
 app.use(cors());
 app.use(express.json());
@@ -90,7 +79,7 @@ app.use(requestLogger);
 
 // Route mounting
 app.use('/api/blocks', blockRoutes);
-app.use('/api/tx', txRouter);
+app.use('/api/tx', transactionRoutes);
 
 // Development endpoints
 if (process.env.NODE_ENV !== 'production') {

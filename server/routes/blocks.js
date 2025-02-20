@@ -24,7 +24,7 @@ import {
   search,
   getAddressDetails,
   getBlockByHeight,
-} from '../services/blockfrost.js';
+} from '../services/blockfrost/index.js';
 import { APIError } from '../utils/APIError.js';
 
 const router = express.Router();

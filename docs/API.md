@@ -3,96 +3,87 @@
 ## Base URL
 
 ```
-http://localhost:3001/api
+Development: http://localhost:3001/api
+Production: https://your-domain.vercel.app/api
 ```
 
 ## Endpoints
 
-### Get Latest Block
+### Blocks
 
-Retrieves the most recent block from the Cardano blockchain.
+#### Get Latest Block
 
 ```
-GET /block/latest
+GET /blocks/latest
 ```
 
-#### Response
+Response:
 
 ```json
 {
   "success": true,
   "data": {
     "hash": "string",
-    "height": number,
-    "slot": number,
-    "epoch": number,
-    "epoch_slot": number,
+    "height": "number",
+    "slot": "number",
+    "epoch": "number",
+    "epoch_slot": "number",
     "slot_leader": "string",
-    "size": number,
-    "time": number,
-    "tx_count": number,
+    "size": "number",
+    "time": "number",
+    "tx_count": "number",
     "output": "string",
     "fees": "string",
     "block_vrf": "string",
     "previous_block": "string",
     "next_block": "string",
-    "confirmations": number
+    "confirmations": "number"
   }
 }
 ```
 
-### Get Block Details
-
-Retrieves detailed information about a specific block.
+#### Get Block Details
 
 ```
-GET /block/:hash
+GET /blocks/:hash
 ```
 
-#### Parameters
+Parameters:
 
-- `hash`: The block hash (64 characters)
+- `hash`: Block hash (64 characters)
 
-#### Response
+Response: Same as latest block
+
+#### Get Block by Height
+
+```
+GET /blocks/height/:height
+```
+
+Parameters:
+
+- `height`: Block height (number)
+
+Response:
 
 ```json
 {
   "success": true,
-  "data": {
-    "hash": "string",
-    "height": number,
-    "slot": number,
-    "epoch": number,
-    "epoch_slot": number,
-    "slot_leader": "string",
-    "size": number,
-    "time": number,
-    "tx_count": number,
-    "output": "string",
-    "fees": "string",
-    "block_vrf": "string",
-    "previous_block": "string",
-    "next_block": "string",
-    "confirmations": number
-  }
+  "data": ["block_hash"]
 }
 ```
 
-### Get Block Transactions
-
-Retrieves transactions for a specific block.
+#### Get Block Transactions
 
 ```
-GET /block/:hash/transactions
+GET /blocks/:hash/transactions
 ```
 
-#### Parameters
+Parameters:
 
-- `hash`: The block hash (64 characters)
-- `page`: Page number (optional, default: 1)
-- `limit`: Items per page (optional, default: 20)
+- `hash`: Block hash (64 characters)
 
-#### Response
+Response:
 
 ```json
 {
@@ -101,248 +92,199 @@ GET /block/:hash/transactions
     "transactions": [
       {
         "hash": "string",
-        "block_time": number,
-        "inputs": number,
-        "outputs": number,
+        "block": "string",
+        "block_time": "number",
+        "inputs": "number",
+        "outputs": "number",
         "input_amount": "string",
         "output_amount": "string",
         "fees": "string"
-      }
-    ],
-    "pagination": {
-      "currentPage": number,
-      "totalPages": number,
-      "hasNext": boolean,
-      "hasPrevious": boolean
-    }
-  }
-}
-```
-
-### Get Address Details
-
-Retrieves details about a specific address.
-
-```
-GET /address/:address
-```
-
-#### Parameters
-
-- `address`: The Cardano address
-
-#### Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "address": "string",
-    "balance": "string",
-    "stake_address": "string",
-    "utxos": [
-      {
-        "tx_hash": "string",
-        "output_index": number,
-        "amount": "string",
-        "assets": [
-          {
-            "unit": "string",
-            "quantity": "string"
-          }
-        ]
-      }
-    ],
-    "transactions": [
-      {
-        "tx_hash": "string",
-        "block_height": number,
-        "block_time": number
       }
     ]
   }
 }
 ```
 
-## Utility Functions
+### Transactions
 
-### Currency Utilities
+#### Get Transaction Details
 
-```javascript
-// Convert Lovelace to ADA
-const ada = formatAda('5000000'); // "5.000000"
-
-// Convert ADA to Lovelace
-const lovelace = adaToLovelace('5.5'); // "5500000"
-
-// Format number with options
-const formatted = formatNumber('1234.5678', {
-  decimals: 2,
-  trimZeros: true,
-}); // "1,234.57"
-
-// Validate ADA amount
-const isValid = isValidAdaAmount('5.123456'); // true
+```
+GET /tx/:hash
 ```
 
-### Date Utilities
+Parameters:
 
-```javascript
-// Format date
-const date = formatDate(1645564800); // "Feb 23, 2022, 12:00:00 AM"
+- `hash`: Transaction hash (64 characters)
 
-// Get relative time
-const relative = getRelativeTime(1645564800); // "2 years ago"
-
-// Format short date
-const shortDate = formatShortDate(1645564800); // "2022-02-23"
-
-// Check if within time range
-const isRecent = isWithinRange(1645564800, {
-  value: 24,
-  unit: 'hours',
-}); // false
-```
-
-### DOM Utilities
-
-```javascript
-// Get element safely
-const element = getElement('my-id');
-
-// Add event listener
-addSafeEventListener(element, 'click', () => {});
-
-// Remove event listener
-removeSafeEventListener(element, 'click', handler);
-
-// Create element
-const div = createElement(
-  'div',
-  {
-    className: 'my-class',
-    dataset: { id: '123' },
-  },
-  'Content'
-);
-```
-
-### UI Utilities
-
-```javascript
-// Display error
-displayError('Failed to load', 'error-container', {
-  isWarning: true,
-  autoHide: 3000,
-});
-
-// Display loading
-displayLoading('content-container', {
-  message: 'Loading blocks...',
-  showSpinner: true,
-});
-
-// Clear content
-clearContent('container-id');
-
-// Toggle visibility
-toggleVisibility('element-id', true);
-```
-
-## Error Handling
-
-### Standard Error Format
+Response:
 
 ```json
 {
-  "status": "error",
-  "message": "string",
-  "type": "string",
-  "stack": "string" // Only in development
-}
-```
-
-### Status Codes
-
-| Code | Description           |
-| ---- | --------------------- |
-| 200  | Success               |
-| 400  | Bad Request           |
-| 401  | Unauthorized          |
-| 403  | Forbidden             |
-| 404  | Not Found             |
-| 408  | Request Timeout       |
-| 429  | Too Many Requests     |
-| 500  | Internal Server Error |
-| 502  | Bad Gateway           |
-
-## Rate Limiting
-
-- Window: 15 minutes
-- Max Requests: 100 per IP
-- Headers: X-RateLimit-Limit, X-RateLimit-Remaining
-- Response when limit exceeded:
-
-```json
-{
-  "status": "error",
-  "message": "Too many requests, please try again later.",
-  "type": "rate_limit_exceeded"
-}
-```
-
-## Security Headers
-
-All endpoints are protected with:
-
-- Content-Security-Policy
-- X-Frame-Options
-- X-XSS-Protection
-- X-Content-Type-Options
-- Referrer-Policy
-- Strict-Transport-Security (in production)
-
-## CORS
-
-Cross-Origin Resource Sharing is configured with:
-
-- Allowed origins: Configurable per environment
-- Methods: GET
-- Headers: Content-Type, Accept
-- Credentials: false
-
-## Example Usage
-
-### JavaScript Fetch
-
-```javascript
-async function getLatestBlock() {
-  try {
-    const response = await fetch('http://localhost:3001/api/block/latest');
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+  "success": true,
+  "data": {
+    "hash": "string",
+    "block_hash": "string",
+    "block_height": "number",
+    "block_time": "number",
+    "slot": "number",
+    "index": "number",
+    "output_amount": "string",
+    "input_amount": "string",
+    "fees": "string",
+    "deposit": "string",
+    "size": "number",
+    "invalid_before": "string",
+    "invalid_hereafter": "string",
+    "utxos": {
+      "inputs": [
+        {
+          "tx_hash": "string",
+          "output_index": "number",
+          "amount": "string",
+          "address": "string"
+        }
+      ],
+      "outputs": [
+        {
+          "address": "string",
+          "amount": "string",
+          "assets": [
+            {
+              "unit": "string",
+              "quantity": "string"
+            }
+          ]
+        }
+      ]
     }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching block:', error);
-    throw error;
   }
 }
 ```
 
-### cURL
+### Search
 
-```bash
-# Get latest block
-curl http://localhost:3001/api/block/latest
+#### Global Search
 
-# Get specific block
-curl http://localhost:3001/api/block/{block_hash}
-
-# Get block transactions with pagination
-curl http://localhost:3001/api/block/{block_hash}/transactions?page=1&limit=20
-
-# Get address details
-curl http://localhost:3001/api/address/{address}
 ```
+GET /blocks/search?q=:query
+```
+
+Parameters:
+
+- `q`: Search query (min 3 characters)
+
+Response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "type": "string", // "block", "transaction", "address", "stake_address", "pool"
+    "result": {
+      // Varies based on type
+    }
+  }
+}
+```
+
+## Error Handling
+
+All endpoints return errors in the following format:
+
+```json
+{
+  "success": false,
+  "error": "Error message",
+  "status": "number"
+}
+```
+
+Common error codes:
+
+- 400: Bad Request (invalid input)
+- 403: Forbidden (invalid API key)
+- 404: Not Found
+- 429: Too Many Requests
+- 500: Internal Server Error
+
+## Client Utilities
+
+### API Client
+
+```javascript
+import {
+  getLatestBlock,
+  getBlockDetails,
+  getBlockTransactions,
+  getTransactionDetails,
+  search,
+} from './api.js';
+
+// Get latest block
+const latestBlock = await getLatestBlock();
+
+// Get block details
+const block = await getBlockDetails(hashOrHeight);
+
+// Get block transactions
+const transactions = await getBlockTransactions(blockHash);
+
+// Get transaction details
+const transaction = await getTransactionDetails(txHash);
+
+// Search
+const results = await search(query);
+```
+
+### Response Formatting
+
+```javascript
+import { formatSuccess, formatError } from './utils/responseFormatter.js';
+
+// Success response
+const success = formatSuccess(data);
+
+// Error response
+const error = formatError(new Error('Not found'));
+
+// Paginated response
+const paginated = formatPagination(data, {
+  currentPage: 1,
+  totalPages: 10,
+  hasNext: true,
+  hasPrevious: false,
+  totalItems: 100,
+});
+```
+
+### Error Handling
+
+```javascript
+import { APIError } from './utils/APIError.js';
+import { logger } from './utils/logger.js';
+
+try {
+  // API operations
+} catch (error) {
+  logger.error('Operation failed', { error });
+  throw new APIError(error.message, error.status);
+}
+```
+
+## Rate Limiting
+
+- Limit: 100 requests per 15 minutes
+- Headers:
+  - `X-RateLimit-Limit`: Maximum requests
+  - `X-RateLimit-Remaining`: Remaining requests
+  - `X-RateLimit-Reset`: Time until reset
+
+## Security
+
+- All endpoints require HTTPS in production
+- API key required for Blockfrost operations
+- Input validation on all parameters
+- Rate limiting protection
+- CORS protection
+- Security headers via Helmet

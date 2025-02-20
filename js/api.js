@@ -22,7 +22,7 @@ const API_CONFIG = {
     BLOCK_BY_HEIGHT: (height) => `/blocks/height/${height}`,
     BLOCK_TRANSACTIONS: (hash) => `/blocks/${hash}/transactions`,
     BLOCKS_LIST: '/blocks',
-    TRANSACTION_DETAILS: (hash) => `/blocks/tx/${hash}`,
+    TRANSACTION_DETAILS: (hash) => `/tx/${hash}`,
     SEARCH: '/blocks/search',
     ADDRESS_DETAILS: (address) => `/blocks/address/${address}`,
     ADDRESS_UTXOS: (address) => `/addresses/${address}/utxos`,
@@ -60,6 +60,22 @@ const getFriendlyErrorMessage = (error) => {
   return matchedMessage || ERROR_MESSAGES.default;
 };
 
+const handleApiError = (error, context = {}) => {
+  console.error('API error:', { ...context, error });
+
+  // If it's already an enhanced error, just throw it
+  if (error.status && error.message) {
+    throw error;
+  }
+
+  // Create enhanced error with proper message and status
+  const enhancedError = new Error(getFriendlyErrorMessage(error));
+  enhancedError.status = error.status || 500;
+  enhancedError.originalError = error;
+  enhancedError.context = context;
+  throw enhancedError;
+};
+
 async function apiRequest(endpoint, options = {}) {
   try {
     console.log('Making API request:', { endpoint, options });
@@ -88,14 +104,7 @@ async function apiRequest(endpoint, options = {}) {
 
     return data.data;
   } catch (error) {
-    console.error('API request failed:', { endpoint, error });
-    if (error.status) {
-      throw error;
-    }
-    const enhancedError = new Error(error.message || ERROR_MESSAGES.default);
-    enhancedError.status = 500;
-    enhancedError.originalError = error;
-    throw enhancedError;
+    handleApiError(error, { endpoint, options });
   }
 }
 
@@ -158,12 +167,38 @@ export async function getBlockDetails(hashOrHeight) {
 }
 
 export async function getBlockTransactions(blockHash) {
+  if (!blockHash || !/^[0-9a-fA-F]{64}$/.test(blockHash)) {
+    throw new Error('Invalid block hash format');
+  }
+
   console.log('Getting block transactions:', blockHash);
-  const data = await apiRequest(
-    API_CONFIG.ENDPOINTS.BLOCK_TRANSACTIONS(blockHash)
-  );
-  console.log('Block transactions response:', data);
-  return data.transactions || [];
+  try {
+    const data = await apiRequest(
+      API_CONFIG.ENDPOINTS.BLOCK_TRANSACTIONS(blockHash)
+    );
+    console.log('Block transactions response:', data);
+
+    if (!data || !data.transactions) {
+      console.warn('Unexpected response format:', data);
+      return [];
+    }
+
+    return data.transactions;
+  } catch (error) {
+    console.error('Error fetching block transactions:', {
+      blockHash,
+      error: {
+        message: error.message,
+        status: error.status,
+        originalError: error.originalError,
+      },
+    });
+    throw new Error(
+      error.status === 404
+        ? 'Block not found'
+        : 'Error loading block transactions: ' + error.message
+    );
+  }
 }
 
 export async function getBlocks(

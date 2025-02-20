@@ -1,165 +1,245 @@
 # Architecture Documentation
 
-## System Architecture
+## Deployment Architectures
 
-### Frontend Architecture
+### Local Development Architecture
 
-The frontend implements a modular vanilla JavaScript architecture with clear separation of concerns:
+The application uses a traditional client-server architecture for local development:
+
+1. **Express Server** (`server.js`)
+
+   - Handles API requests
+   - Manages middleware
+   - Serves static files
+   - Provides development utilities
+
+2. **Client Application**
+   - Static file serving
+   - Direct API communication
+   - Real-time updates
+   - UI rendering
+
+### Production Architecture (Vercel)
+
+In production, the application uses a serverless architecture:
+
+1. **Serverless Functions**
+
+   - API routes as individual functions
+   - Automatic scaling
+   - Edge network distribution
+   - Optimized performance
+
+2. **Static Site**
+   - Pre-rendered HTML
+   - Client-side JavaScript
+   - CSS and assets
+   - CDN distribution
+
+## Frontend Architecture
+
+### Core Modules
 
 1. **Main Module** (`main.js`)
 
-   - Application entry point and initialization
-   - Event handling coordination
-   - Auto-refresh management (20-second intervals)
-   - State management for current block/address selection
-   - Coordination between UI and API modules
+   - Application initialization
+   - Event coordination
+   - State management
+   - Route handling
+   - Auto-refresh logic
 
-2. **API Module** (`api.js`)
+2. **API Client** (`api.js`)
 
-   - Centralized API communication layer
-   - Endpoints:
-     - `/api/block/latest` - Latest block retrieval
-     - `/api/block/:hash` - Block details by hash
-     - `/api/block/:hash/transactions` - Block transactions
-     - `/api/address/:address` - Address details and transactions
-
-3. **UI Module** (`ui.js`)
-
-   - DOM manipulation and updates
-   - Component rendering:
-     - Block list display
-     - Block details view
-     - Transaction list
-     - Address details
-     - Loading states with spinners
-     - Error/Warning messages
-   - Event listener management
-   - Smooth transitions
-
-4. **Utils Module** (`utils.js`)
-
-   - Currency formatting and validation:
-     - Lovelace/ADA conversion
-     - BigInt calculations
-     - Number formatting
-   - Date formatting and validation:
-     - Timestamp formatting
-     - Relative time calculation
-     - Date range validation
-   - DOM utilities:
-     - Safe element retrieval
-     - Event listener management
-     - Element creation
-   - UI utilities:
-     - Error/Warning display
-     - Loading states
-     - Content management
-     - Visibility transitions
-
-5. **Renderers Module** (`renderers/`)
-   - Modular UI components:
-     - `search.js` - Search functionality
-     - `details.js` - Block/Transaction details
-     - `address.js` - Address information
-
-### Backend Architecture
-
-1. **Server Layer** (`server.js`)
-
-   - Express.js server configuration
-   - Route definitions
-   - Middleware setup:
-     - CORS with environment config
-     - Rate limiting with headers
-     - Security headers (Helmet)
-     - Static file serving
-
-2. **Services Layer** (`services/`)
-
-   - Blockfrost service (`blockfrost.js`):
-     - API communication
-     - Data transformation
-     - Error handling
-
-3. **Middleware Layer**
-
-   - Error handling (`errorHandler.js`)
-   - Async operation wrapper (`asyncHandler.js`)
-   - API configuration validation
-   - Request logging
+   - Centralized API communication
+   - Error handling
+   - Response normalization
+   - Request formatting
    - Type validation
 
-4. **Utils Layer**
-   - Custom error class (`APIError.js`)
+3. **Details Module** (`details.js`)
+
+   - Block/transaction details
+   - UTXO tracking
+   - Navigation handling
+   - Data visualization
+   - Copy functionality
+
+4. **Transaction Module** (`transaction.js`)
+
+   - Transaction processing
+   - UTXO management
+   - Fee calculation
+   - Input/output handling
+   - Asset tracking
+
+5. **Wallet Module** (`wallet.js`)
+
+   - Address management
+   - Balance tracking
+   - Transaction history
+   - UTXO consolidation
+   - Asset management
+
+6. **Utils Module** (`utils.js`)
+   - Currency formatting
+   - Date handling
+   - DOM utilities
+   - Validation
+   - Error handling
+   - UI helpers
+
+### Renderers
+
+Modular UI components for different views:
+
+1. **Block Renderer**
+
+   - Block list
+   - Block details
+   - Transaction list
+   - Navigation
+
+2. **Transaction Renderer**
+
+   - Transaction details
+   - UTXO visualization
+   - Input/output display
+   - Asset information
+
+3. **Address Renderer**
+
+   - Address details
+   - Balance display
+   - Transaction history
+   - UTXO list
+
+4. **Shared Components**
+   - Loading states
+   - Error messages
+   - Copy buttons
+   - Pagination
+   - Search
+
+## Backend Architecture
+
+### Server Layer
+
+1. **Express Server** (Development)
+
+   ```
+   Client Request → Express → Middleware → Routes → Services → Response
+   ```
+
+2. **Serverless Functions** (Production)
+   ```
+   Client Request → Vercel Edge → Serverless Function → Services → Response
+   ```
+
+### Service Layer (`services/blockfrost/`)
+
+1. **Core Services**
+
+   - `blocks.js`: Block operations
+   - `transactions.js`: Transaction handling
+   - `addresses.js`: Address operations
+   - `search.js`: Search functionality
+   - `utils.js`: Shared utilities
+   - `index.js`: Service exports
+
+2. **Utilities**
+   - `APIError.js`: Error handling
+   - `responseFormatter.js`: Response formatting
+   - `logger.js`: Logging system
+
+### Middleware Layer
+
+1. **Request Processing**
+
+   - CORS handling
+   - Rate limiting
+   - Body parsing
+   - Security headers
+
+2. **Error Handling**
+
+   - Error catching
    - Response formatting
-   - Data transformation
-   - Type checking
+   - Logging
+   - Client feedback
 
-## Security Features
-
-1. **API Security**
-
-   - Rate limiting with headers
-   - Secure headers via Helmet
-   - Environment-based CORS
-   - API key validation
-   - Error sanitization
-   - Type checking
-
-2. **Data Validation**
-
+3. **Validation**
    - Input validation
    - Type checking
-   - BigInt for precise calculations
-   - Response validation
-   - Error boundaries
-
-3. **Error Handling**
-   - Unified error class
-   - Environment-based responses
-   - Structured error types
-   - Centralized logging
-   - Graceful degradation
+   - API key verification
+   - Request sanitization
 
 ## Data Flow
 
-1. **Client Request Flow**
+### Request Flow
 
 ```
-User Action → main.js → api.js → Express Server → Blockfrost API
-                ↓          ↓           ↓              ↓
-             utils.js   renderers   services     API Response
-                ↓          ↓           ↓              ↓
-             UI Updates ← ui.js ← Error Handling ← Response
+Client Action → API Client → Server/Serverless → Blockfrost API
+     ↓             ↓              ↓                    ↓
+  Renderer ← Response Handling ← Error Handling ← API Response
 ```
 
-2. **Error Flow**
+### Error Flow
 
 ```
-Error → APIError → ErrorHandler → Client
-         ↓            ↓            ↓
-    Error Type    Sanitization   Display
-         ↓            ↓            ↓
-    Logging    Environment    UI Update
+Error Source → Error Handler → Logger → Client
+     ↓             ↓            ↓         ↓
+Error Type → Response Format → Logs → UI Update
 ```
 
-## Performance Considerations
+## Security Implementation
 
-1. **Frontend**
+1. **API Security**
 
-   - Efficient DOM updates
-   - Debounced event handlers
-   - Optimized rendering cycles
-   - BigInt calculations
-   - Smooth transitions
-   - Resource cleanup
+   - Rate limiting
+   - CORS configuration
+   - Security headers
+   - Input validation
+   - Error sanitization
 
-2. **Backend**
-   - Request caching
-   - Rate limiting with headers
-   - Efficient error handling
-   - Response optimization
+2. **Data Protection**
+
    - Type validation
+   - Input sanitization
+   - Response formatting
+   - Error handling
+   - Secure headers
+
+3. **Environment Security**
+   - API key protection
+   - Environment configs
+   - Production safeguards
+   - Error masking
+   - Logging control
+
+## Performance Optimization
+
+1. **Client-Side**
+
+   - Modular rendering
+   - Event debouncing
+   - DOM optimization
+   - Resource cleanup
+   - Cache management
+
+2. **Server-Side**
+
+   - Response optimization
+   - Error handling
+   - Validation efficiency
+   - Resource management
+   - Connection pooling
+
+3. **Deployment**
+   - Edge network
+   - CDN distribution
+   - Static optimization
+   - Cache headers
+   - Compression
 
 ## Dependencies
 

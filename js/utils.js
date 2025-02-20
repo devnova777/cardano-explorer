@@ -550,3 +550,22 @@ export const { LOVELACE_TO_ADA } = CONSTANTS;
 
 export const { displayError, displayLoading, clearContent, toggleVisibility } =
   uiUtils;
+
+/**
+ * Common validation utilities
+ */
+export const validators = {
+  isValidHash: (hash) =>
+    typeof hash === 'string' && /^[0-9a-fA-F]{64}$/.test(hash),
+  isValidAddress: (address) =>
+    typeof address === 'string' && /^addr1[a-zA-Z0-9]+$/.test(address),
+  isValidStakeAddress: (address) =>
+    typeof address === 'string' && /^stake1[a-zA-Z0-9]+$/.test(address),
+  isValidPoolId: (poolId) =>
+    typeof poolId === 'string' && /^pool1[a-zA-Z0-9]+$/.test(poolId),
+  isValidBlockHeight: (height) => {
+    const num = parseInt(height);
+    return !isNaN(num) && num >= 0 && num.toString() === height.toString();
+  },
+  isValidSearchQuery: (query) => query && query.length >= 3,
+};
