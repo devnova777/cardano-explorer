@@ -50,10 +50,7 @@ cardano-explorer/
 │   └── assets/          # Static assets
 │       ├── images/      # Image resources
 │       └── icons/       # Icon assets
-├── tests/              # Test suites
-│   ├── unit/          # Unit tests
-│   ├── integration/   # Integration tests
-│   └── e2e/          # End-to-end tests
+├
 └── docs/              # Documentation
 ```
 

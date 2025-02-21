@@ -134,11 +134,7 @@ cardano-block-explorer/
 │   ├── TECHNICAL.md    # Technical details
 │   ├── API.md          # API documentation
 │   └── SECURITY.md     # Security guidelines
-├── tests/              # Test suites
-│   ├── unit/          # Unit tests
-│   ├── integration/   # Integration tests
-│   └── e2e/          # End-to-end tests
-├── .env.example       # Environment template
+├
 ├── vercel.json        # Vercel configuration
 └── index.html         # Entry point
 ```
