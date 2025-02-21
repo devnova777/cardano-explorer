@@ -48,12 +48,20 @@ export const createHashElement = (hash, label) => `
 
 /**
  * Renders an error message
- * @param {string} message - Error message to display
+ * @param {string} message - The error message
+ * @param {string} [details] - Optional error details
  * @returns {string} HTML string for error message
  */
-export const renderError = (message) => `
-  <div class="error-message">
-    ${message}
+export const renderError = (message, details = '') => `
+  <div class="error-container">
+    <div class="error-icon">⚠️</div>
+    <div class="error-content">
+      <h3 class="error-title">${message}</h3>
+      ${details ? `<p class="error-details">${details}</p>` : ''}
+      <button class="retry-btn" onclick="window.location.reload()">
+        Try Again
+      </button>
+    </div>
   </div>
 `;
 
