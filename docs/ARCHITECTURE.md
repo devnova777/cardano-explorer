@@ -47,7 +47,7 @@ cardano-explorer/
 - helmet: Security headers
 - node-fetch: HTTP client
 - dotenv: Environment configuration
-- express-rate-limit: Rate limiting
+- express-rate-limit: Rate limiting.
 
 ### Development
 
