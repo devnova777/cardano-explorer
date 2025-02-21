@@ -319,7 +319,7 @@ class APIKeyManager {
 - API key rotation system
 - Advanced rate limiting
 - Real-time security monitoring
-- Automated security testing
+- Automated security testing.
 
 ## Regular Security Practices
 
