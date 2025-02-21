@@ -109,6 +109,10 @@
       "destination": "/server/server.js"
     },
     {
+      "source": "/pages/details",
+      "destination": "/pages/details.html"
+    },
+    {
       "source": "/js/(.*)",
       "destination": "/public/js/$1"
     },

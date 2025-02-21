@@ -160,22 +160,43 @@ export async function getBlockDetails(hashOrHeight) {
   }
 
   try {
+    let endpoint;
     if (isHeight) {
-      const endpoint = API_CONFIG.ENDPOINTS.BLOCK_BY_HASH(heightNum);
+      endpoint = API_CONFIG.ENDPOINTS.BLOCK_BY_HASH(heightNum);
+      console.log('Fetching block by height:', { endpoint });
       const blockHashes = await apiRequest(endpoint);
 
       if (!Array.isArray(blockHashes) || blockHashes.length === 0) {
+        console.error('No block hashes found for height:', heightNum);
         throw new Error('Block not found at this height');
       }
 
-      return await apiRequest(
-        API_CONFIG.ENDPOINTS.BLOCK_BY_HASH(blockHashes[0])
-      );
+      endpoint = API_CONFIG.ENDPOINTS.BLOCK_BY_HASH(blockHashes[0]);
+      console.log('Fetching block by hash:', {
+        endpoint,
+        hash: blockHashes[0],
+      });
+      const block = await apiRequest(endpoint);
+      console.log('Block data received:', block);
+      return block;
     } else {
-      return await apiRequest(API_CONFIG.ENDPOINTS.BLOCK_BY_HASH(hashOrHeight));
+      endpoint = API_CONFIG.ENDPOINTS.BLOCK_BY_HASH(hashOrHeight);
+      console.log('Fetching block by hash:', { endpoint });
+      const block = await apiRequest(endpoint);
+      console.log('Block data received:', block);
+      return block;
     }
   } catch (error) {
-    console.error('Block details error:', { hashOrHeight, error });
+    console.error('Block details error:', {
+      hashOrHeight,
+      error: {
+        message: error.message,
+        status: error.status,
+        data: error.data,
+        stack: error.stack,
+      },
+    });
+
     if (error.status === 404) {
       throw new Error(
         isHash
@@ -183,6 +204,14 @@ export async function getBlockDetails(hashOrHeight) {
           : 'Block not found at this height'
       );
     }
+
+    // Check for specific error conditions
+    if (error.message.includes('Invalid response format')) {
+      throw new Error(
+        'Unable to process block data from server. Please try again.'
+      );
+    }
+
     throw error;
   }
 }

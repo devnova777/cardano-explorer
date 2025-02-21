@@ -195,10 +195,51 @@ router.get(
   asyncHandler(async (req, res) => {
     const { hash } = req.params;
     try {
+      console.log('Fetching block details for hash:', hash);
       const block = await getBlockByHash(hash);
-      res.json({ success: true, data: block });
+      console.log('Block data received:', block);
+
+      // Validate block data structure
+      if (!block || typeof block !== 'object') {
+        console.error('Invalid block data received:', block);
+        throw new APIError('Invalid block data received from Blockfrost', 500);
+      }
+
+      // Ensure all required fields are present
+      const requiredFields = ['hash', 'height', 'slot', 'time', 'epoch'];
+      const missingFields = requiredFields.filter((field) => !block[field]);
+
+      if (missingFields.length > 0) {
+        console.error('Missing required fields in block data:', {
+          missingFields,
+          block,
+        });
+        throw new APIError(
+          `Missing required block fields: ${missingFields.join(', ')}`,
+          500
+        );
+      }
+
+      // Send response
+      res.json({
+        success: true,
+        data: {
+          ...block,
+          height: Number(block.height),
+          slot: Number(block.slot),
+          epoch: Number(block.epoch),
+          time: Number(block.time),
+        },
+      });
     } catch (error) {
-      console.error('Error getting block by hash:', { hash, error });
+      console.error('Error getting block by hash:', {
+        hash,
+        error: {
+          message: error.message,
+          status: error.status,
+          stack: error.stack,
+        },
+      });
       if (error.status === 404) {
         throw new APIError('Block not found', 404);
       }
