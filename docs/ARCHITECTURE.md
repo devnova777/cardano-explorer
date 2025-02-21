@@ -85,7 +85,7 @@ Key features:
 - Secure headers via Helmet
 - CORS protection
 - Input validation
-- API key validation
+- API key validation.
 - Error sanitization
 
 ## Performance Optimization
