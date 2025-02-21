@@ -1,3 +1,16 @@
+/**
+ * Transaction Service
+ *
+ * Handles all transaction-related Blockfrost interactions:
+ * - Transaction details retrieval
+ * - UTXO processing
+ * - Amount calculations
+ * - Block associations
+ * - Asset tracking
+ *
+ * @module services/blockfrost/transactions
+ */
+
 import { APIError } from '../../utils/APIError.js';
 import { fetchFromBlockfrost, calculateAmount } from './utils.js';
 
@@ -14,6 +27,9 @@ export const getTransactionDetails = async (hash) => {
       fetchFromBlockfrost(`/txs/${hash}/utxos`),
       fetchFromBlockfrost(`/blocks/${txData.block}`),
     ]);
+
+    const formatUtxo = (amount) =>
+      amount?.find((a) => a.unit === 'lovelace')?.quantity || '0';
 
     return {
       hash,
@@ -35,14 +51,12 @@ export const getTransactionDetails = async (hash) => {
         inputs: utxoData.inputs.map((input) => ({
           tx_hash: input.tx_hash,
           output_index: input.output_index,
-          amount:
-            input.amount.find((a) => a.unit === 'lovelace')?.quantity || '0',
+          amount: formatUtxo(input.amount),
           address: input.address,
         })),
         outputs: utxoData.outputs.map((output) => ({
           address: output.address,
-          amount:
-            output.amount.find((a) => a.unit === 'lovelace')?.quantity || '0',
+          amount: formatUtxo(output.amount),
           assets: output.amount.filter((a) => a.unit !== 'lovelace'),
         })),
       },

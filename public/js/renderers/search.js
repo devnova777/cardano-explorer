@@ -1,28 +1,25 @@
 /**
  * Search Results Renderer
  *
- * Responsible for rendering search results for different Cardano entities:
- * - Blocks
- * - Transactions
- * - Epochs
- * - Addresses
- * - Stake Addresses
- * - Asset Policies
- * - Stake Pools
- *
- * Dependencies:
- * - search: API function to perform searches
- * - formatDate: Formats timestamps
- * - formatAda: Formats ADA amounts
+ * Manages search functionality and result display:
+ * - Multi-entity search processing
+ * - Result formatting and display
+ * - Error handling and user feedback
+ * - Navigation controls
+ * - Entity-specific rendering
  *
  * @module renderers/search
  */
 
 import { formatDate, formatAda } from '../utils.js';
 
+// Navigation and Path Utilities
 const getBasePath = () =>
   window.location.pathname.includes('/pages/') ? '.' : 'pages';
+const renderLink = (hash, type, text) =>
+  `<a href="${getBasePath()}/details.html?hash=${hash}&type=${type}">${text}</a>`;
 
+// Common UI Components
 const renderResultCard = (title, content) => `
   <div class="results-grid">
     <div class="result-card">
@@ -39,10 +36,7 @@ const renderResultSection = (type, content) => `
   </section>
 `;
 
-const renderLink = (hash, type, text) => `
-  <a href="${getBasePath()}/details.html?hash=${hash}&type=${type}">${text}</a>
-`;
-
+// Entity-Specific Renderers
 const RESULT_RENDERERS = {
   block: (block) =>
     renderResultSection(
@@ -50,13 +44,13 @@ const RESULT_RENDERERS = {
       renderResultCard(
         `Block #${block.height.toLocaleString()}`,
         `
-        <p>Hash: ${renderLink(block.hash, 'block', block.hash)}</p>
-        <p>Height: ${block.height.toLocaleString()}</p>
-        <p>Time: ${formatDate(block.time)}</p>
-        <p>Transactions: ${block.tx_count.toLocaleString()}</p>
-        <p>Size: ${block.size.toLocaleString()} bytes</p>
-        <p>Epoch: ${block.epoch}</p>
-        `
+      <p>Hash: ${renderLink(block.hash, 'block', block.hash)}</p>
+      <p>Height: ${block.height.toLocaleString()}</p>
+      <p>Time: ${formatDate(block.time)}</p>
+      <p>Transactions: ${block.tx_count.toLocaleString()}</p>
+      <p>Size: ${block.size.toLocaleString()} bytes</p>
+      <p>Epoch: ${block.epoch}</p>
+    `
       )
     ),
 
@@ -169,6 +163,7 @@ const RESULT_RENDERERS = {
     ),
 };
 
+// Error Handling
 const renderError = (message) => `
   <div class="error">
     <h2>Search Results</h2>
@@ -187,27 +182,24 @@ const renderError = (message) => `
   </div>
 `;
 
-/**
- * Makes a search request to the API
- * @param {string} query - The search query
- * @returns {Promise<Object>} The search result
- */
+const ERROR_MESSAGES = {
+  'not found':
+    'No results found for your search. Please try a different query.',
+  Invalid:
+    'Please enter a valid Cardano block hash, transaction hash, address, or epoch number.',
+  'too short': 'Please enter a longer search term (at least 3 characters).',
+};
+
+// API Interactions
 export const search = async (query) => {
   try {
     const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-    if (!response.ok) {
-      throw new Error('Search request failed');
-    }
+    if (!response.ok) throw new Error('Search request failed');
 
     const data = await response.json();
-    if (!data || !data.type || !data.result) {
-      throw new Error('No results found');
-    }
+    if (!data?.type || !data?.result) throw new Error('No results found');
 
-    return {
-      type: data.type,
-      result: data.result,
-    };
+    return { type: data.type, result: data.result };
   } catch (error) {
     console.error('Search API error:', error);
     throw error;
@@ -215,19 +207,16 @@ export const search = async (query) => {
 };
 
 export const getUserFriendlyError = (error) => {
-  if (error.message.includes('not found')) {
-    return 'No results found for your search. Please try a different query.';
-  }
-  if (error.message.includes('Invalid')) {
-    return 'Please enter a valid Cardano block hash, transaction hash, address, or epoch number.';
-  }
-  if (error.message.includes('too short')) {
-    return 'Please enter a longer search term (at least 3 characters).';
-  }
-  return error.message;
+  const message = error.message;
+  return (
+    Object.entries(ERROR_MESSAGES).find(([key]) =>
+      message.includes(key)
+    )?.[1] || message
+  );
 };
 
-export async function renderSearchResults(query) {
+// Main Render Function
+export const renderSearchResults = async (query) => {
   const mainContent = document.getElementById('main-content');
   mainContent.innerHTML = '<div class="loading">Searching...</div>';
 
@@ -246,14 +235,11 @@ export async function renderSearchResults(query) {
         </div>
       </div>
     `;
-
-    document
-      .querySelector('.back-to-explorer')
-      ?.addEventListener('click', () => window.location.reload());
   } catch (error) {
     mainContent.innerHTML = renderError(getUserFriendlyError(error));
+  } finally {
     document
       .querySelector('.back-to-explorer')
       ?.addEventListener('click', () => window.location.reload());
   }
-}
+};

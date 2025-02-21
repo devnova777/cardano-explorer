@@ -1,6 +1,14 @@
 /**
- * Response Formatter Utility
- * Provides consistent response formatting across all API endpoints
+ * Response Formatter Service
+ *
+ * Provides standardized API response formatting:
+ * - Success response formatting
+ * - Error response handling
+ * - Pagination support
+ * - Environment-aware error details
+ * - Consistent structure
+ *
+ * @module utils/responseFormatter
  */
 
 export const formatSuccess = (data) => ({

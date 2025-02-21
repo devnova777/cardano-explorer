@@ -1,34 +1,50 @@
 /**
  * Transaction List and Details Renderer
  *
- * Responsible for rendering transaction lists and detailed transaction views.
- * Handles rendering of transaction details, lists, and input/output displays.
+ * Manages the rendering of transaction-related UI components:
+ * - Transaction list views with summary information
+ * - Detailed transaction views with full information
+ * - Input/Output (UTXO) displays with address information
+ * - Asset information for token transfers
+ * - Navigation controls and copy functionality
+ *
+ * @module renderers/transactions
  */
 
 import { SVG_ICONS, formatAda, formatDate } from '../utils.js';
 import { renderDetailRow, createHashElement, renderError } from './shared.js';
 
-// Constants for URL handling
+// Constants
 const PATHS = {
   HOME: '../index.html',
   DETAILS: '../pages/details.html',
   TRANSACTION: '../pages/transaction.html',
+  WALLET: '../pages/wallet.html',
+};
+
+const UI_ELEMENTS = {
+  CONTEXTUAL_NAV: 'contextual-nav',
+  NO_DATA: 'no-data',
+  TRANSACTION_ITEM: 'transaction-item',
+  TRANSACTION_LIST: 'transaction-list',
+  IO_SECTION: 'io-section',
+  IO_ITEM: 'io-item',
 };
 
 /**
- * Renders a list of transactions
- * @param {Array} transactions - Array of transaction objects
+ * Renders a list of transactions with summary information
+ * @param {Array<Object>} transactions - Array of transaction objects
  * @returns {string} HTML string for transaction list
  */
 export const renderTransactionList = (transactions) => {
   if (!transactions?.length) {
-    return '<div class="no-data">No transactions in this block</div>';
+    return `<div class="${UI_ELEMENTS.NO_DATA}">No transactions in this block</div>`;
   }
 
   const transactionItems = transactions
     .map(
       (tx) => `
-      <div class="transaction-item">
+      <div class="${UI_ELEMENTS.TRANSACTION_ITEM}">
         ${createHashElement(tx.hash, 'Transaction Hash')}
         <div class="transaction-details">
           ${renderDetailRow('Time', formatDate(tx.block_time))}
@@ -47,12 +63,57 @@ export const renderTransactionList = (transactions) => {
     .join('');
 
   return `
-    <div class="transaction-list">
+    <div class="${UI_ELEMENTS.TRANSACTION_LIST}">
       <h3 class="section-title">Transactions (${transactions.length})</h3>
       ${transactionItems}
     </div>
   `;
 };
+
+/**
+ * Renders an individual input or output item
+ * @param {Object} item - Input/Output item data
+ * @param {number} index - Item index
+ * @param {boolean} isInput - Whether this is an input item
+ * @returns {string} HTML string for I/O item
+ */
+const renderIOItem = (item, index, isInput) => `
+  <div class="${UI_ELEMENTS.IO_ITEM}">
+    <div class="io-item-header">
+      <div class="io-index">#${index + 1}</div>
+      <div class="io-amount">${formatAda(item.amount)} ₳</div>
+    </div>
+    <div class="io-item-content">
+      <div class="io-address">
+        <span class="address-label">Address:</span>
+        <a href="${PATHS.WALLET}?address=${item.address}" class="address-value">
+          ${item.address}
+        </a>
+        <button class="copy-btn" data-hash="${
+          item.address
+        }" title="Copy Address">
+          ${SVG_ICONS.copy}
+        </button>
+      </div>
+      ${
+        isInput && item.tx_hash
+          ? `
+        <div class="io-tx-hash">
+          <span class="tx-label">Tx Hash:</span>
+          <a href="${PATHS.TRANSACTION}?hash=${item.tx_hash}" class="tx-hash">
+            ${item.tx_hash}
+          </a>
+          <button class="copy-btn" data-hash="${item.tx_hash}" title="Copy Transaction Hash">
+            ${SVG_ICONS.copy}
+          </button>
+        </div>
+      `
+          : ''
+      }
+      ${renderAssets(item)}
+    </div>
+  </div>
+`;
 
 /**
  * Renders transaction inputs and outputs
@@ -61,7 +122,7 @@ export const renderTransactionList = (transactions) => {
  */
 export const renderTransactionIO = (transaction) => `
   <div class="transaction-io">
-    <div class="io-section inputs-section">
+    <div class="${UI_ELEMENTS.IO_SECTION} inputs-section">
       <div class="io-header">
         <h3 class="section-title">
           ${SVG_ICONS.rightArrow} Inputs (${transaction.utxos.inputs.length})
@@ -70,50 +131,11 @@ export const renderTransactionIO = (transaction) => `
       </div>
       <div class="io-list">
         ${transaction.utxos.inputs
-          .map(
-            (item, index) => `
-          <div class="io-item">
-            <div class="io-item-header">
-              <div class="io-index">#${index + 1}</div>
-              <div class="io-amount">${formatAda(item.amount)} ₳</div>
-            </div>
-            <div class="io-item-content">
-              <div class="io-address">
-                <span class="address-label">Address:</span>
-                <a href="wallet.html?address=${
-                  item.address
-                }" class="address-value">
-                  ${item.address}
-                </a>
-                <button class="copy-btn" data-hash="${
-                  item.address
-                }" title="Copy Address">
-                  ${SVG_ICONS.copy}
-                </button>
-              </div>
-              ${
-                item.tx_hash
-                  ? `
-                <div class="io-tx-hash">
-                  <span class="tx-label">Tx Hash:</span>
-                  <a href="transaction.html?hash=${item.tx_hash}" class="tx-hash">
-                    ${item.tx_hash}
-                  </a>
-                  <button class="copy-btn" data-hash="${item.tx_hash}" title="Copy Transaction Hash">
-                    ${SVG_ICONS.copy}
-                  </button>
-                </div>
-              `
-                  : ''
-              }
-            </div>
-          </div>
-        `
-          )
+          .map((item, index) => renderIOItem(item, index, true))
           .join('')}
       </div>
     </div>
-    <div class="io-section outputs-section">
+    <div class="${UI_ELEMENTS.IO_SECTION} outputs-section">
       <div class="io-header">
         <h3 class="section-title">
           ${SVG_ICONS.rightArrow} Outputs (${transaction.utxos.outputs.length})
@@ -122,31 +144,7 @@ export const renderTransactionIO = (transaction) => `
       </div>
       <div class="io-list">
         ${transaction.utxos.outputs
-          .map(
-            (item, index) => `
-          <div class="io-item">
-            <div class="io-item-header">
-              <div class="io-index">#${index + 1}</div>
-              <div class="io-amount">${formatAda(item.amount)} ₳</div>
-            </div>
-            <div class="io-item-content">
-              <div class="io-address">
-                <span class="address-label">Address:</span>
-                <a href="wallet.html?address=${
-                  item.address
-                }" class="address-value">
-                  ${item.address}
-                </a>
-                <button class="copy-btn" data-hash="${
-                  item.address
-                }" title="Copy Address">
-                  ${SVG_ICONS.copy}
-                </button>
-              </div>
-            </div>
-          </div>
-        `
-          )
+          .map((item, index) => renderIOItem(item, index, false))
           .join('')}
       </div>
     </div>
@@ -155,6 +153,8 @@ export const renderTransactionIO = (transaction) => `
 
 /**
  * Renders asset information for outputs
+ * @param {Object} item - Transaction input/output item
+ * @returns {string} HTML string for asset information
  */
 const renderAssets = (item) => {
   if (!item.assets?.length) return '';
@@ -180,21 +180,31 @@ const renderAssets = (item) => {
 };
 
 /**
- * Renders transaction details
+ * Renders the back navigation button
+ * @returns {string} HTML string for back button
+ */
+const renderBackButton = () => `
+  <button class="back-btn action-btn" id="back-to-block">
+    ${SVG_ICONS.leftArrow}
+    Back to Explorer
+  </button>
+`;
+
+/**
+ * Renders transaction details view
  * @param {Object} transaction - Transaction data
  * @returns {string} HTML string for transaction details
+ * @throws {Error} If transaction data is invalid
  */
 export const renderTransactionDetails = (transaction) => {
   try {
+    if (!transaction?.hash) {
+      throw new Error('Invalid transaction data');
+    }
+
     // Add back button to contextual nav
-    document.getElementById('contextual-nav').innerHTML = `
-      <button class="back-btn action-btn" id="back-to-block">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M15 18l-6-6 6-6"/>
-        </svg>
-        Back to Explorer
-      </button>
-    `;
+    document.getElementById(UI_ELEMENTS.CONTEXTUAL_NAV).innerHTML =
+      renderBackButton();
 
     const totalValue = formatAda(transaction.output_amount);
     const fee = formatAda(transaction.fees);
@@ -228,9 +238,9 @@ export const renderTransactionDetails = (transaction) => {
               <div class="summary-item">
                 <div class="summary-label">Block Height</div>
                 <div class="summary-value">
-                  <a href="details.html?type=block&height=${
-                    transaction.block_height
-                  }" class="hash-link">
+                  <a href="${PATHS.DETAILS}?type=block&height=${
+      transaction.block_height
+    }" class="hash-link">
                     #${transaction.block_height.toLocaleString()}
                   </a>
                 </div>
@@ -263,6 +273,6 @@ export const renderTransactionDetails = (transaction) => {
     `;
   } catch (error) {
     console.error('Error rendering transaction details:', error);
-    throw error;
+    return renderError('Failed to render transaction details', error.message);
   }
 };

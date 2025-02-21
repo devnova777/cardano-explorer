@@ -1,11 +1,12 @@
 /**
  * Details Page Controller
  *
- * Manages the block and transaction details page functionality including:
- * - Loading and displaying block/transaction details
- * - Managing UI state and event listeners
- * - Handling search functionality
- * - Copy to clipboard operations
+ * Manages the display and interaction of blockchain entity details:
+ * - Block details and transaction lists
+ * - Transaction details with UTXO information
+ * - Search functionality across entities
+ * - UI state management and event handling
+ * - Navigation and clipboard operations
  *
  * @module details
  */
@@ -21,19 +22,41 @@ import { renderTransactionDetails } from './renderers/transactions.js';
 import { renderError, renderLoading } from './renderers/shared.js';
 import { getElement } from './utils.js';
 
-const UI = {
-  SELECTORS: {
-    DETAILS_CONTENT: 'details-content',
-    DETAIL_TYPE: '.detail-type',
-    SEARCH_INPUT: '#search-input',
-    SEARCH_BUTTON: '#search-btn',
-    DETAILS_CONTAINER: '.details-container',
-    MAIN_CONTENT: '#main-content',
-    CONTAINER: '.container',
+// Configuration Constants
+const CONFIG = {
+  UI: {
+    SELECTORS: {
+      DETAILS_CONTENT: 'details-content',
+      DETAIL_TYPE: '.detail-type',
+      SEARCH_INPUT: '#search-input',
+      SEARCH_BUTTON: '#search-btn',
+      DETAILS_CONTAINER: '.details-container',
+      MAIN_CONTENT: '#main-content',
+      CONTAINER: '.container',
+      COPY_BUTTON: '.copy-btn',
+      BACK_BUTTON: '#back-to-block',
+      VIEW_TRANSACTIONS: '#view-transactions',
+    },
+    MINIMUM_SEARCH_LENGTH: 3,
+    COPY_FEEDBACK_DURATION: 2000,
   },
-  MINIMUM_SEARCH_LENGTH: 3,
+  VALIDATION: {
+    HASH_REGEX: /^[0-9a-fA-F]{64}$/,
+    ENTITY_TYPES: ['block', 'transaction', 'address'],
+    REQUIRED_BLOCK_FIELDS: ['hash', 'height', 'slot', 'time', 'epoch'],
+  },
+  ROUTES: {
+    WALLET: 'wallet.html',
+    TRANSACTION: 'transaction.html',
+    DETAILS: 'details.html',
+  },
 };
 
+/**
+ * Copies text to clipboard with visual feedback
+ * @param {HTMLElement} btn - Button element that triggered the copy
+ * @param {string} hash - Text to copy
+ */
 const copyToClipboard = async (btn, hash) => {
   try {
     await navigator.clipboard.writeText(hash);
@@ -43,15 +66,18 @@ const copyToClipboard = async (btn, hash) => {
     setTimeout(() => {
       btn.title = originalTitle;
       btn.classList.remove('copied');
-    }, 2000);
+    }, CONFIG.UI.COPY_FEEDBACK_DURATION);
   } catch (err) {
     console.error('Failed to copy:', err);
     btn.title = 'Failed to copy';
   }
 };
 
+/**
+ * Sets up copy functionality for all copy buttons
+ */
 const setupCopyButtons = () => {
-  document.querySelectorAll('.copy-btn').forEach((btn) => {
+  document.querySelectorAll(CONFIG.UI.SELECTORS.COPY_BUTTON).forEach((btn) => {
     btn.addEventListener('click', () => copyToClipboard(btn, btn.dataset.hash));
   });
 };
@@ -66,36 +92,30 @@ const setupBlockEventListeners = (block, hasTransactions) => {
   setupCopyButtons();
 
   if (hasTransactions) {
-    console.log('Setting up transaction listeners');
-    // Back button listener
-    const backBtn = document.getElementById('back-to-block');
+    const backBtn = document.getElementById(
+      CONFIG.UI.SELECTORS.BACK_BUTTON.slice(1)
+    );
     if (backBtn) {
-      console.log('Found back button');
       backBtn.addEventListener('click', (e) => {
-        console.log('Back button clicked');
         e.preventDefault();
         window.loadBlockDetails(block.hash);
       });
     }
   } else {
-    console.log('Setting up transaction row listener');
-    const txRow = document.getElementById('view-transactions');
+    const txRow = document.getElementById(
+      CONFIG.UI.SELECTORS.VIEW_TRANSACTIONS.slice(1)
+    );
     if (txRow && block.tx_count > 0) {
-      console.log('Found transaction row with transactions');
-
-      // Handle click event
-      txRow.addEventListener('click', (e) => {
-        console.log('Transaction row clicked');
+      const loadTransactions = (e) => {
         e.preventDefault();
         window.loadBlockTransactions(block.hash);
-      });
+      };
 
-      // Handle keyboard events for accessibility
+      txRow.addEventListener('click', loadTransactions);
       txRow.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
-          console.log('Transaction row activated via keyboard');
           e.preventDefault();
-          window.loadBlockTransactions(block.hash);
+          loadTransactions(e);
         }
       });
     }
@@ -103,7 +123,7 @@ const setupBlockEventListeners = (block, hasTransactions) => {
 };
 
 /**
- * Extracts URL parameters for block details
+ * Extracts and validates URL parameters
  * @returns {{type: string, hash: string}} URL parameters
  * @throws {Error} If parameters are missing or invalid
  */
@@ -116,13 +136,54 @@ const getUrlParams = () => {
     throw new Error('Missing required URL parameters: type and hash');
   }
 
-  if (!['block', 'transaction', 'address'].includes(type)) {
+  if (!CONFIG.VALIDATION.ENTITY_TYPES.includes(type)) {
     throw new Error(
-      'Invalid type parameter. Must be "block", "transaction", or "address"'
+      `Invalid type parameter. Must be one of: ${CONFIG.VALIDATION.ENTITY_TYPES.join(
+        ', '
+      )}`
     );
   }
 
   return { type, hash };
+};
+
+/**
+ * Validates block data structure and content
+ * @param {Object} blockData - Block data to validate
+ * @returns {Object} Validated block data
+ * @throws {Error} If validation fails
+ */
+const validateBlockData = (blockData) => {
+  if (!blockData) {
+    throw new Error('No block data received from server');
+  }
+
+  const missingFields = CONFIG.VALIDATION.REQUIRED_BLOCK_FIELDS.filter(
+    (field) => !blockData[field]
+  );
+  if (missingFields.length > 0) {
+    throw new Error(
+      `Invalid block data: missing required fields (${missingFields.join(
+        ', '
+      )})`
+    );
+  }
+
+  if (!CONFIG.VALIDATION.HASH_REGEX.test(blockData.hash)) {
+    throw new Error('Invalid block data: incorrect hash format');
+  }
+
+  const numericFields = ['height', 'slot', 'epoch'];
+  const invalidTypes = numericFields.filter(
+    (field) => typeof blockData[field] !== 'number'
+  );
+  if (invalidTypes.length > 0) {
+    throw new Error(
+      `Invalid block data: fields must be numeric (${invalidTypes.join(', ')})`
+    );
+  }
+
+  return blockData;
 };
 
 /**
@@ -136,12 +197,10 @@ const displayBlockDetails = (block, transactions = null) => {
       throw new Error('Invalid block data');
     }
 
-    const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
-    const detailType = document.querySelector(UI.SELECTORS.DETAIL_TYPE);
+    const detailsContent = getElement(CONFIG.UI.SELECTORS.DETAILS_CONTENT);
+    const detailType = document.querySelector(CONFIG.UI.SELECTORS.DETAIL_TYPE);
 
-    if (!detailType) {
-      console.warn('Detail type element not found');
-    } else {
+    if (detailType) {
       updateDetailType(detailType, block);
     }
 
@@ -149,89 +208,54 @@ const displayBlockDetails = (block, transactions = null) => {
     setupBlockEventListeners(block, !!transactions);
   } catch (error) {
     console.error('Error displaying block details:', error);
-    displayError('Failed to display block details');
+    displayError('Failed to display block details', error.message);
   }
 };
 
 /**
  * Displays error message in the UI
- * @param {string|Error} error - Error message or Error object to display
+ * @param {string} message - Main error message
+ * @param {string} [details] - Optional error details
  */
-const displayError = (error) => {
-  const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
-  let errorMessage = '';
-  let errorDetails = '';
+const displayError = (message, details = '') => {
+  const detailsContent = getElement(CONFIG.UI.SELECTORS.DETAILS_CONTENT);
+  let errorDetails = details;
 
-  if (error instanceof Error) {
-    errorMessage = error.message;
-    if (error.status === 404) {
+  if (!errorDetails && details instanceof Error) {
+    if (details.status === 404) {
       errorDetails =
-        'The requested block or transaction could not be found. Please verify the hash and try again.';
-    } else if (error.status === 400) {
+        'The requested resource could not be found. Please verify the hash and try again.';
+    } else if (details.status === 400) {
       errorDetails =
-        'The request was invalid. Please check the provided hash or height.';
-    } else if (error.status === 500) {
+        'The request was invalid. Please check the provided parameters.';
+    } else if (details.status >= 500) {
       errorDetails = 'A server error occurred. Please try again later.';
     }
-  } else {
-    errorMessage = error;
   }
 
-  detailsContent.innerHTML = renderError(errorMessage, errorDetails);
+  detailsContent.innerHTML = renderError(message, errorDetails);
 };
 
 /**
  * Displays loading state in the UI
  */
 const displayLoading = () => {
-  const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
-  detailsContent.innerHTML = renderLoading();
+  const detailsContent = getElement(CONFIG.UI.SELECTORS.DETAILS_CONTENT);
+  detailsContent.innerHTML = renderLoading('Loading details...');
 };
 
-const validateBlockData = (blockData) => {
-  if (!blockData) {
-    console.error('No block data received');
-    throw new Error('No block data received from server');
-  }
-
-  // Check for required fields
-  const requiredFields = ['hash', 'height', 'slot', 'time', 'epoch'];
-  const missingFields = requiredFields.filter((field) => !blockData[field]);
-
-  if (missingFields.length > 0) {
-    console.error('Invalid block data structure:', {
-      blockData,
-      missingFields,
-    });
-    throw new Error(
-      `Invalid block data: missing required fields (${missingFields.join(
-        ', '
-      )})`
-    );
-  }
-
-  // Validate field types
-  if (
-    typeof blockData.height !== 'number' ||
-    typeof blockData.slot !== 'number' ||
-    typeof blockData.epoch !== 'number'
-  ) {
-    console.error('Invalid block data field types:', blockData);
-    throw new Error('Invalid block data: incorrect field types');
-  }
-
-  // Validate hash format
-  if (!/^[0-9a-fA-F]{64}$/.test(blockData.hash)) {
-    console.error('Invalid block hash format:', blockData.hash);
-    throw new Error('Invalid block data: incorrect hash format');
-  }
-
-  return blockData;
+/**
+ * Updates browser history without page reload
+ * @param {string} type - Entity type
+ * @param {string} hash - Entity hash
+ */
+const updateBrowserHistory = (type, hash) => {
+  history.pushState({}, '', `?type=${type}&hash=${hash}`);
 };
 
 /**
  * Loads and displays block details
- * @param {string} hashOrHeight - The block hash or height
+ * @param {string} hashOrHeight - Block hash or height
  */
 window.loadBlockDetails = async (hashOrHeight) => {
   try {
@@ -239,17 +263,16 @@ window.loadBlockDetails = async (hashOrHeight) => {
     const block = await getBlockDetails(hashOrHeight);
     validateBlockData(block);
     displayBlockDetails(block);
-    // Update URL without reloading
-    history.pushState({}, '', `?type=block&hash=${block.hash}`);
+    updateBrowserHistory('block', block.hash);
   } catch (error) {
     console.error('Error loading block details:', error);
-    displayError(error.message || 'Failed to load block details');
+    displayError('Failed to load block details', error);
   }
 };
 
 /**
  * Loads and displays block transactions
- * @param {string} hash - The block hash
+ * @param {string} hash - Block hash
  */
 window.loadBlockTransactions = async (hash) => {
   try {
@@ -262,13 +285,13 @@ window.loadBlockTransactions = async (hash) => {
     displayBlockDetails(block, transactions);
   } catch (error) {
     console.error('Error loading block transactions:', error);
-    displayError(error.message);
+    displayError('Failed to load block transactions', error);
   }
 };
 
 /**
  * Loads and displays transaction details
- * @param {string} hash - The transaction hash
+ * @param {string} hash - Transaction hash
  */
 window.loadTransactionDetails = async (hash) => {
   try {
@@ -277,59 +300,59 @@ window.loadTransactionDetails = async (hash) => {
     if (!transaction) {
       throw new Error('No transaction data received');
     }
-    const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
+    const detailsContent = getElement(CONFIG.UI.SELECTORS.DETAILS_CONTENT);
     detailsContent.innerHTML = renderTransactionDetails(transaction);
     setupCopyButtons();
-    // Update URL without reloading
-    history.pushState({}, '', `?type=transaction&hash=${hash}`);
+    updateBrowserHistory('transaction', hash);
   } catch (error) {
     console.error('Error loading transaction details:', error);
-    displayError(error.message || 'Failed to load transaction details');
+    displayError('Failed to load transaction details', error);
   }
 };
 
 /**
  * Handles search functionality
- * @param {string} query - The search query
+ * @param {string} query - Search query
  */
 const handleSearch = async (query) => {
-  if (!query?.trim() || query.trim().length < UI.MINIMUM_SEARCH_LENGTH) {
-    alert(
-      `Please enter at least ${UI.MINIMUM_SEARCH_LENGTH} characters to search`
+  const trimmedQuery = query?.trim();
+  if (!trimmedQuery || trimmedQuery.length < CONFIG.UI.MINIMUM_SEARCH_LENGTH) {
+    displayError(
+      'Invalid search query',
+      `Please enter at least ${CONFIG.UI.MINIMUM_SEARCH_LENGTH} characters to search`
     );
     return;
   }
 
-  const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
-
   try {
     displayLoading();
-    const searchResult = await search(query.trim());
-    console.log('Search result:', searchResult);
+    const searchResult = await search(trimmedQuery);
 
-    if (!searchResult || !searchResult.type || !searchResult.result) {
+    if (!searchResult?.type || !searchResult?.result) {
       throw new Error('No results found');
     }
 
-    // Simple switch for different result types
-    switch (searchResult.type) {
+    const { type, result } = searchResult;
+    let redirectUrl;
+
+    switch (type) {
       case 'address':
-        const address = searchResult.result.address;
-        console.log('Redirecting to wallet page:', { address });
-        window.location.href = `wallet.html?address=${address}`;
+        redirectUrl = `${CONFIG.ROUTES.WALLET}?address=${result.address}`;
         break;
       case 'transaction':
-        window.location.href = `transaction.html?hash=${searchResult.result.hash}`;
+        redirectUrl = `${CONFIG.ROUTES.TRANSACTION}?hash=${result.hash}`;
         break;
       case 'block':
-        window.location.href = `details.html?type=block&hash=${searchResult.result.hash}`;
+        redirectUrl = `${CONFIG.ROUTES.DETAILS}?type=block&hash=${result.hash}`;
         break;
       default:
         throw new Error('Unsupported search result type');
     }
+
+    window.location.href = redirectUrl;
   } catch (error) {
     console.error('Search error:', error);
-    displayError(error.message || 'Search failed. Please try again.');
+    displayError('Search failed', error);
   }
 };
 
@@ -337,17 +360,15 @@ const handleSearch = async (query) => {
  * Sets up event listeners for the page
  */
 const setupEventListeners = () => {
-  // Add search event listeners
-  const searchInput = document.querySelector(UI.SELECTORS.SEARCH_INPUT);
-  const searchButton = document.querySelector(UI.SELECTORS.SEARCH_BUTTON);
+  const searchInput = document.querySelector(CONFIG.UI.SELECTORS.SEARCH_INPUT);
+  const searchButton = document.querySelector(
+    CONFIG.UI.SELECTORS.SEARCH_BUTTON
+  );
 
   if (searchInput && searchButton) {
-    // Handle search button click
-    searchButton.addEventListener('click', () => {
-      handleSearch(searchInput.value);
-    });
-
-    // Handle enter key in search input
+    searchButton.addEventListener('click', () =>
+      handleSearch(searchInput.value)
+    );
     searchInput.addEventListener('keypress', (event) => {
       if (event.key === 'Enter') {
         handleSearch(searchInput.value);
@@ -368,11 +389,11 @@ const initDetailsPage = async () => {
     console.log('URL params:', params);
 
     if (params.type === 'address') {
-      window.location.href = `wallet.html?address=${params.hash}`;
+      window.location.href = `${CONFIG.ROUTES.WALLET}?address=${params.hash}`;
       return;
     }
 
-    const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
+    const detailsContent = getElement(CONFIG.UI.SELECTORS.DETAILS_CONTENT);
     if (!detailsContent) {
       throw new Error('Details content element not found');
     }
@@ -385,15 +406,12 @@ const initDetailsPage = async () => {
     }
   } catch (error) {
     console.error('Error initializing details page:', error);
-    displayError(error.message || 'Failed to load details');
+    displayError('Failed to initialize page', error);
   }
 };
 
 // Initialize the page when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM loaded, initializing page');
-  initDetailsPage();
-});
+document.addEventListener('DOMContentLoaded', initDetailsPage);
 
 // Export functions for testing
 export { initDetailsPage, getUrlParams, setupEventListeners, handleSearch };

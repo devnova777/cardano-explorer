@@ -1,62 +1,85 @@
+/**
+ * Cardano Wallet Details Controller
+ *
+ * Manages the wallet details page functionality:
+ * - Wallet balance and address display
+ * - Transaction history with pagination
+ * - Search functionality
+ * - Copy-to-clipboard operations
+ * - Error handling and loading states
+ *
+ * Features:
+ * - Real-time balance updates
+ * - Transaction pagination
+ * - Responsive error handling
+ * - Accessibility support
+ * - Clipboard integration
+ *
+ * @module wallet
+ * @version 1.0.0
+ */
+
 import { getAddressDetails, search } from './api.js';
 import { renderError, renderLoading } from './renderers/shared.js';
-import { formatAda } from './utils.js';
+import { formatAda, SVG_ICONS, validators } from './utils.js';
 
-const UI = {
-  ELEMENTS: {
-    CONTENT: 'wallet-content',
-    SEARCH_INPUT: '#search-input',
-    SEARCH_BUTTON: '#search-btn',
+// Configuration Constants
+const CONFIG = {
+  UI: {
+    ELEMENTS: {
+      CONTENT: 'wallet-content',
+      SEARCH_INPUT: '#search-input',
+      SEARCH_BUTTON: '#search-btn',
+      ERROR_CONTAINER: 'error-container',
+      ERROR_MESSAGE: 'error-message',
+    },
+    CLASSES: {
+      CARD: 'card',
+      SECTION: 'section',
+      COPIED: 'copied',
+      ACTIVE: 'active',
+      PAGINATION_BTN: 'pagination-btn',
+    },
   },
-  MINIMUM_SEARCH_LENGTH: 3,
-  TRANSACTIONS_PER_PAGE: 10,
+  PAGINATION: {
+    ITEMS_PER_PAGE: 10,
+    VISIBLE_PAGES: 5,
+  },
+  VALIDATION: {
+    MIN_SEARCH_LENGTH: 3,
+  },
+  TIMING: {
+    COPY_FEEDBACK_DURATION: 2000,
+  },
+  ROUTES: {
+    WALLET: 'wallet.html',
+    TRANSACTION: 'transaction.html',
+    DETAILS: 'details.html',
+  },
 };
 
 /**
- * Render wallet details
+ * Renders wallet overview section
+ * @param {Object} data - Wallet data
+ * @returns {string} HTML string
  */
-const renderWalletDetails = (data) => {
+const renderWalletOverview = (data) => {
+  const totalBalance = calculateTotalBalance(data.amount);
+
   return `
-    <div class="wallet-overview">
+    <div class="wallet-overview" role="region" aria-label="Wallet Overview">
       <div class="wallet-details-grid">
         <div class="balance-info">
           <h3>Balance</h3>
-          <div class="balance-amount">${formatAda(data.amount)}</div>
+          <div class="balance-amount" aria-label="Balance: ${formatAda(
+            totalBalance
+          )} ADA">
+            ${formatAda(totalBalance)}
+          </div>
         </div>
         <div class="address-info">
           <h3>Address Details</h3>
-          <div class="info-row">
-            <span class="label">Address</span>
-            <div class="value-with-copy">
-              ${data.address}
-              <button class="copy-btn" data-hash="${
-                data.address
-              }" title="Copy address">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-              </button>
-            </div>
-          </div>
-          ${
-            data.stake_address
-              ? `
-            <div class="info-row">
-              <span class="label">Stake Address</span>
-              <div class="value-with-copy">
-                ${data.stake_address}
-                <button class="copy-btn" data-hash="${data.stake_address}" title="Copy stake address">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          `
-              : ''
-          }
+          ${renderAddressDetails(data)}
         </div>
       </div>
     </div>
@@ -64,116 +87,192 @@ const renderWalletDetails = (data) => {
 };
 
 /**
- * Handle search functionality
+ * Renders address details section
+ * @param {Object} data - Wallet data
+ * @returns {string} HTML string
+ */
+const renderAddressDetails = (data) => `
+  <div class="info-row">
+    <span class="label">Address</span>
+    <div class="value-with-copy">
+      <div class="address-value" title="${data.address}">${data.address}</div>
+      <button class="copy-btn" data-hash="${
+        data.address
+      }" title="Copy address" aria-label="Copy address">
+        ${SVG_ICONS.COPY}
+      </button>
+    </div>
+  </div>
+  ${
+    data.stake_address
+      ? `
+    <div class="info-row">
+      <span class="label">Stake Address</span>
+      <div class="value-with-copy">
+        <div class="address-value" title="${data.stake_address}">${data.stake_address}</div>
+        <button class="copy-btn" data-hash="${data.stake_address}" title="Copy stake address" aria-label="Copy stake address">
+          ${SVG_ICONS.COPY}
+        </button>
+      </div>
+    </div>
+  `
+      : ''
+  }
+`;
+
+/**
+ * Calculates total balance from amount data
+ * @param {Array|string} amount - Amount data
+ * @returns {string} Total balance in Lovelace
+ */
+const calculateTotalBalance = (amount) => {
+  if (Array.isArray(amount)) {
+    return amount
+      .filter((amt) => amt.unit === 'lovelace')
+      .reduce((sum, amt) => sum + BigInt(amt.quantity), BigInt(0))
+      .toString();
+  }
+  return amount?.toString() || '0';
+};
+
+/**
+ * Handles search functionality
+ * @param {string} query - Search query
  */
 const handleSearch = async (query) => {
-  if (!query?.trim() || query.trim().length < UI.MINIMUM_SEARCH_LENGTH) {
-    alert(
-      `Please enter at least ${UI.MINIMUM_SEARCH_LENGTH} characters to search`
+  const contentElement = document.getElementById(CONFIG.UI.ELEMENTS.CONTENT);
+
+  if (!validators.isValidSearchQuery(query)) {
+    contentElement.innerHTML = renderError(
+      'Invalid search query',
+      `Please enter at least ${CONFIG.VALIDATION.MIN_SEARCH_LENGTH} characters to search`
     );
     return;
   }
-
-  const contentElement = document.getElementById(UI.ELEMENTS.CONTENT);
 
   try {
     contentElement.innerHTML = renderLoading('Searching...');
     const searchResult = await search(query.trim());
 
-    if (!searchResult || !searchResult.type || !searchResult.result) {
+    if (!searchResult?.type || !searchResult?.result) {
       throw new Error('No results found');
     }
 
-    // Redirect based on result type
-    if (searchResult.type === 'address') {
-      window.location.href = `wallet.html?address=${searchResult.result.address}`;
-    } else if (searchResult.type === 'transaction') {
-      window.location.href = `transaction.html?hash=${searchResult.result.hash}`;
-    } else if (searchResult.type === 'block') {
-      window.location.href = `details.html?type=block&hash=${searchResult.result.hash}`;
+    const redirectMap = {
+      address: `${CONFIG.ROUTES.WALLET}?address=`,
+      transaction: `${CONFIG.ROUTES.TRANSACTION}?hash=`,
+      block: `${CONFIG.ROUTES.DETAILS}?type=block&hash=`,
+    };
+
+    const redirectUrl = redirectMap[searchResult.type];
+    if (!redirectUrl) {
+      throw new Error('Unsupported search result type');
     }
+
+    window.location.href =
+      redirectUrl + (searchResult.result.hash || searchResult.result.address);
   } catch (error) {
     console.error('Search error:', error);
-    contentElement.innerHTML = renderError(
-      error.message || 'Search failed. Please try again.'
-    );
+    contentElement.innerHTML = renderError('Search failed', error.message);
   }
 };
 
 /**
- * Render pagination controls
+ * Renders pagination controls
+ * @param {number} currentPage - Current page number
+ * @param {number} totalItems - Total number of items
+ * @returns {string} HTML string
  */
-const renderPagination = (currentPage, totalTransactions) => {
-  const totalPages = Math.ceil(totalTransactions / UI.TRANSACTIONS_PER_PAGE);
+const renderPagination = (currentPage, totalItems) => {
+  const totalPages = Math.ceil(totalItems / CONFIG.PAGINATION.ITEMS_PER_PAGE);
   if (totalPages <= 1) return '';
 
   const pages = [];
-  for (let i = 1; i <= totalPages; i++) {
+  const halfVisible = Math.floor(CONFIG.PAGINATION.VISIBLE_PAGES / 2);
+  let startPage = Math.max(1, currentPage - halfVisible);
+  let endPage = Math.min(
+    totalPages,
+    startPage + CONFIG.PAGINATION.VISIBLE_PAGES - 1
+  );
+
+  if (endPage - startPage + 1 < CONFIG.PAGINATION.VISIBLE_PAGES) {
+    startPage = Math.max(1, endPage - CONFIG.PAGINATION.VISIBLE_PAGES + 1);
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
     pages.push(`
-      <button class="pagination-btn ${i === currentPage ? 'active' : ''}" 
+      <button class="${CONFIG.UI.CLASSES.PAGINATION_BTN} ${
+      i === currentPage ? CONFIG.UI.CLASSES.ACTIVE : ''
+    }" 
               data-page="${i}"
-              ${i === currentPage ? 'disabled' : ''}>
+              ${i === currentPage ? 'disabled aria-current="page"' : ''}
+              aria-label="Page ${i}">
         ${i}
       </button>
     `);
   }
 
   return `
-    <div class="pagination">
-      <button class="pagination-btn" 
+    <nav class="pagination" role="navigation" aria-label="Transaction history pagination">
+      <button class="${CONFIG.UI.CLASSES.PAGINATION_BTN}" 
               data-page="${currentPage - 1}"
-              ${currentPage === 1 ? 'disabled' : ''}>
-        Previous
+              ${currentPage === 1 ? 'disabled' : ''}
+              aria-label="Previous page">
+        ${SVG_ICONS.LEFT_ARROW}
       </button>
       ${pages.join('')}
-      <button class="pagination-btn" 
+      <button class="${CONFIG.UI.CLASSES.PAGINATION_BTN}" 
               data-page="${currentPage + 1}"
-              ${currentPage === totalPages ? 'disabled' : ''}>
-        Next
+              ${currentPage === totalPages ? 'disabled' : ''}
+              aria-label="Next page">
+        ${SVG_ICONS.RIGHT_ARROW}
       </button>
-    </div>
+    </nav>
   `;
 };
 
 /**
- * Render transactions for current page
+ * Renders transaction list
+ * @param {Array} transactions - Transaction data
+ * @param {number} currentPage - Current page number
+ * @returns {string} HTML string
  */
 const renderTransactions = (transactions, currentPage = 1) => {
-  const start = (currentPage - 1) * UI.TRANSACTIONS_PER_PAGE;
-  const end = start + UI.TRANSACTIONS_PER_PAGE;
+  const start = (currentPage - 1) * CONFIG.PAGINATION.ITEMS_PER_PAGE;
+  const end = start + CONFIG.PAGINATION.ITEMS_PER_PAGE;
   const paginatedTransactions = transactions.slice(start, end);
 
   return `
-    <div class="transactions-section">
+    <div class="transactions-section" role="region" aria-label="Transaction History">
       <h3>Recent Transactions</h3>
       <div class="transaction-list">
         ${paginatedTransactions
           .map(
             (tx) => `
-          <div class="transaction-item">
+          <article class="transaction-item" role="article">
             <div class="tx-header">
-              <span class="tx-time">${new Date(
+              <time class="tx-time" datetime="${new Date(
                 tx.block_time * 1000
-              ).toLocaleString()}</span>
+              ).toISOString()}">
+                ${new Date(tx.block_time * 1000).toLocaleString()}
+              </time>
             </div>
             <div class="tx-details">
               <div class="value-with-copy">
-                <div class="address-value">
-                  <a href="transaction.html?hash=${tx.tx_hash}">${
-              tx.tx_hash
-            }</a>
-                </div>
-                <button class="copy-btn" data-hash="${
-                  tx.tx_hash
-                }" title="Copy transaction hash">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                  </svg>
+                <a href="${CONFIG.ROUTES.TRANSACTION}?hash=${tx.tx_hash}" 
+                   class="address-value" 
+                   title="${tx.tx_hash}">
+                  ${tx.tx_hash}
+                </a>
+                <button class="copy-btn" 
+                        data-hash="${tx.tx_hash}" 
+                        title="Copy transaction hash"
+                        aria-label="Copy transaction hash">
+                  ${SVG_ICONS.COPY}
                 </button>
               </div>
             </div>
-          </div>
+          </article>
         `
           )
           .join('')}
@@ -184,34 +283,25 @@ const renderTransactions = (transactions, currentPage = 1) => {
 };
 
 /**
- * Initialize the wallet page
+ * Initializes the wallet page
  */
 const initWalletPage = async () => {
-  const contentElement = document.getElementById(UI.ELEMENTS.CONTENT);
-  const searchParams = new URLSearchParams(window.location.search);
-  const address = searchParams.get('address');
-  console.log('Initializing wallet page with params:', {
-    searchParams: Object.fromEntries(searchParams),
-    address,
-  });
-
+  const contentElement = document.getElementById(CONFIG.UI.ELEMENTS.CONTENT);
   if (!contentElement) {
     console.error('Content element not found');
     return;
   }
 
-  if (!address) {
-    const errorContainer = document.getElementById('error-container');
-    const errorMessage = document.getElementById('error-message');
-    if (errorContainer && errorMessage) {
-      errorMessage.textContent = 'Please provide a wallet address';
-      errorContainer.style.display = 'block';
-    }
+  const address = new URLSearchParams(window.location.search).get('address');
+  if (!validators.isValidAddress(address)) {
+    contentElement.innerHTML = renderError(
+      'Invalid address',
+      'Please provide a valid wallet address'
+    );
     return;
   }
 
   try {
-    // Show loading state
     contentElement.innerHTML = renderLoading('Loading wallet details...');
 
     const response = await fetch(`/api/blocks/address/${address}`);
@@ -219,194 +309,105 @@ const initWalletPage = async () => {
       throw new Error(`Failed to fetch wallet data: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    if (!data.success || !data.data) {
+    const { success, data } = await response.json();
+    if (!success || !data) {
       throw new Error('Invalid wallet data received');
     }
 
-    const walletData = data.data;
-    console.log('Wallet data:', walletData);
-
-    // Calculate total balance from amount array if it's an array
-    let totalBalance = '0';
-    if (Array.isArray(walletData.amount)) {
-      totalBalance = walletData.amount
-        .filter((amt) => amt.unit === 'lovelace')
-        .reduce((sum, amt) => sum + BigInt(amt.quantity), BigInt(0))
-        .toString();
-    } else if (typeof walletData.amount === 'string') {
-      totalBalance = walletData.amount;
-    }
-
-    // Render the full wallet content
     contentElement.innerHTML = `
-      <div id="error-container" style="display: none;">
-        <div class="error-message" id="error-message"></div>
-      </div>
-      <div class="section">
-        <div class="card">
-          <div class="wallet-overview">
-            <div class="wallet-details-grid">
-              <div class="balance-info">
-                <h3>Balance</h3>
-                <div class="balance-amount">${formatAda(totalBalance)}</div>
-              </div>
-              
-              <div class="address-info">
-                <h3>Address Details</h3>
-                <div class="info-row">
-                  <span class="label">Address</span>
-                  <div class="value-with-copy">
-                    <div class="address-value">${walletData.address}</div>
-                    <button class="copy-btn" data-hash="${
-                      walletData.address
-                    }" title="Copy address">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                ${
-                  walletData.stake_address
-                    ? `
-                  <div class="info-row">
-                    <span class="label">Stake Address</span>
-                    <div class="value-with-copy">
-                      <div class="address-value">${walletData.stake_address}</div>
-                      <button class="copy-btn" data-hash="${walletData.stake_address}" title="Copy stake address">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                `
-                    : ''
-                }
-              </div>
-            </div>
-          </div>
-
+      <div class="${CONFIG.UI.CLASSES.SECTION}">
+        <div class="${CONFIG.UI.CLASSES.CARD}">
+          ${renderWalletOverview(data)}
           ${
-            Array.isArray(walletData.transactions) &&
-            walletData.transactions.length > 0
-              ? renderTransactions(walletData.transactions, 1)
+            data.transactions?.length
+              ? renderTransactions(data.transactions, 1)
               : ''
           }
         </div>
       </div>
     `;
 
-    // Setup copy buttons after rendering
     setupCopyButtons();
-    // Setup pagination buttons
-    setupPaginationButtons(walletData.transactions);
+    if (data.transactions?.length) {
+      setupPaginationButtons(data.transactions);
+    }
   } catch (error) {
     console.error('Error loading wallet:', error);
-    contentElement.innerHTML = `
-      <div class="section">
-        <div class="card">
-          <div class="transaction-content">
-            <div class="transaction-header">
-              <div class="summary-row">
-                <div class="summary-item">
-                  <span class="summary-label">Balance</span>
-                  <span class="summary-value">0 ₳</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="transaction-io">
-              <div class="io-section">
-                <div class="io-header">
-                  <h3 class="section-title">Error</h3>
-                </div>
-                <div class="io-list">
-                  <div class="io-item">
-                    <div class="io-item-content">
-                      <div class="error-message">${error.message}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
+    contentElement.innerHTML = renderError(
+      'Failed to load wallet',
+      error.message
+    );
   }
 };
 
 /**
- * Setup copy functionality for addresses
+ * Sets up copy-to-clipboard functionality
  */
-function setupCopyButtons() {
+const setupCopyButtons = () => {
   document.querySelectorAll('.copy-btn').forEach((btn) => {
     btn.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(btn.dataset.hash);
         const originalTitle = btn.title;
         btn.title = 'Copied!';
-        btn.classList.add('copied');
+        btn.classList.add(CONFIG.UI.CLASSES.COPIED);
         setTimeout(() => {
           btn.title = originalTitle;
-          btn.classList.remove('copied');
-        }, 2000);
-      } catch (err) {
-        console.error('Failed to copy:', err);
+          btn.classList.remove(CONFIG.UI.CLASSES.COPIED);
+        }, CONFIG.TIMING.COPY_FEEDBACK_DURATION);
+      } catch (error) {
+        console.error('Copy operation failed:', error);
         btn.title = 'Failed to copy';
       }
     });
   });
-}
+};
 
 /**
- * Setup pagination event listeners
+ * Sets up pagination event listeners
+ * @param {Array} transactions - Transaction data
  */
-function setupPaginationButtons(transactions) {
-  document.querySelectorAll('.pagination-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (!btn.disabled) {
-        const page = parseInt(btn.dataset.page);
-        const transactionsSection = document.querySelector(
-          '.transactions-section'
-        );
-        if (transactionsSection) {
-          transactionsSection.outerHTML = renderTransactions(
-            transactions,
-            page
+const setupPaginationButtons = (transactions) => {
+  document
+    .querySelectorAll(`.${CONFIG.UI.CLASSES.PAGINATION_BTN}`)
+    .forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (!btn.disabled) {
+          const page = parseInt(btn.dataset.page);
+          const transactionsSection = document.querySelector(
+            '.transactions-section'
           );
-          setupCopyButtons();
-          setupPaginationButtons(transactions);
+          if (transactionsSection) {
+            transactionsSection.outerHTML = renderTransactions(
+              transactions,
+              page
+            );
+            setupCopyButtons();
+            setupPaginationButtons(transactions);
+          }
         }
-      }
+      });
     });
-  });
-}
+};
 
 /**
- * Setup event listeners
+ * Sets up page event listeners
  */
-function setupEventListeners() {
-  const searchInput = document.querySelector(UI.ELEMENTS.SEARCH_INPUT);
-  const searchButton = document.querySelector(UI.ELEMENTS.SEARCH_BUTTON);
+const setupEventListeners = () => {
+  const searchInput = document.querySelector(CONFIG.UI.ELEMENTS.SEARCH_INPUT);
+  const searchButton = document.querySelector(CONFIG.UI.ELEMENTS.SEARCH_BUTTON);
 
   if (searchInput && searchButton) {
-    searchButton.addEventListener('click', () => {
-      handleSearch(searchInput.value);
-    });
-
+    searchButton.addEventListener('click', () =>
+      handleSearch(searchInput.value)
+    );
     searchInput.addEventListener('keypress', (event) => {
       if (event.key === 'Enter') {
         handleSearch(searchInput.value);
       }
     });
   }
-}
+};
 
 // Initialize the page when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -414,4 +415,5 @@ document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
 });
 
+// Export for testing
 export { initWalletPage, handleSearch };

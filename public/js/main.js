@@ -28,9 +28,17 @@ import {
 } from './ui.js';
 import { getElement } from './utils.js';
 
+// Configuration Constants
 const CONFIG = {
-  REFRESH_INTERVAL: 20000, // 20 seconds
-  MIN_SEARCH_LENGTH: 3,
+  TIMINGS: {
+    REFRESH_INTERVAL: 20000, // 20 seconds
+    ERROR_DISPLAY_DURATION: 5000, // 5 seconds
+  },
+  VALIDATION: {
+    MIN_SEARCH_LENGTH: 3,
+    REQUIRED_BLOCK_FIELDS: ['hash', 'height', 'time', 'epoch', 'slot'],
+    REQUIRED_TX_FIELDS: ['transactions'],
+  },
   ELEMENTS: {
     LATEST_BLOCK: 'latest-block-info',
     BLOCK_LIST: 'block-list',
@@ -43,12 +51,19 @@ const CONFIG = {
     EXPLORER_GRID: '.explorer-grid',
     CONTAINER: '.container',
   },
+  ROUTES: {
+    DETAILS: 'pages/details.html',
+  },
 };
 
+/**
+ * Manages application state and auto-refresh functionality
+ */
 class ExplorerState {
   constructor() {
     this.autoRefreshInterval = null;
     this.currentBlockHash = null;
+    this.isLoading = false;
   }
 
   setCurrentBlock(hash) {
@@ -58,57 +73,109 @@ class ExplorerState {
   clearCurrentBlock() {
     this.currentBlockHash = null;
   }
+
+  setLoading(isLoading) {
+    this.isLoading = isLoading;
+  }
+
+  isAutoRefreshActive() {
+    return !!this.autoRefreshInterval;
+  }
 }
 
 const state = new ExplorerState();
 
+/**
+ * Validates block data structure and content
+ * @param {Object} block - Block data to validate
+ * @param {string} [context='block'] - Context for error messages
+ * @returns {Object} Validated block data
+ * @throws {Error} If validation fails
+ */
 const validateBlockData = (block, context = 'block') => {
-  if (!block) throw new Error(`No ${context} data received from API`);
-  if (!block.hash || !block.height) {
-    console.error(`Invalid ${context} data structure:`, block);
-    throw new Error(`Invalid ${context} data structure received`);
+  if (!block) {
+    throw new Error(`No ${context} data received from API`);
   }
+
+  const missingFields = CONFIG.VALIDATION.REQUIRED_BLOCK_FIELDS.filter(
+    (field) => !block[field]
+  );
+
+  if (missingFields.length > 0) {
+    console.error(`Invalid ${context} data structure:`, block);
+    throw new Error(
+      `Invalid ${context} data: missing required fields (${missingFields.join(
+        ', '
+      )})`
+    );
+  }
+
   return block;
 };
 
+/**
+ * Validates transaction data structure
+ * @param {Object} txData - Transaction data to validate
+ * @returns {Object} Validated transaction data
+ * @throws {Error} If validation fails
+ */
 const validateTransactionData = (txData) => {
-  if (!txData) throw new Error('No transaction data received from API');
-  if (!txData.transactions || !Array.isArray(txData.transactions)) {
+  if (!txData) {
+    throw new Error('No transaction data received from API');
+  }
+
+  const missingFields = CONFIG.VALIDATION.REQUIRED_TX_FIELDS.filter(
+    (field) => !txData[field]
+  );
+
+  if (missingFields.length > 0 || !Array.isArray(txData.transactions)) {
     console.error('Invalid transaction data structure:', txData);
     throw new Error('Invalid transaction data structure received');
   }
+
   return txData;
 };
 
+/**
+ * Manages auto-refresh functionality
+ */
 const autoRefresh = {
   start() {
-    if (!state.autoRefreshInterval) {
+    if (!state.isAutoRefreshActive()) {
       state.autoRefreshInterval = setInterval(
         window.fetchLatestBlock,
-        CONFIG.REFRESH_INTERVAL
+        CONFIG.TIMINGS.REFRESH_INTERVAL
       );
-      const btn = getElement(CONFIG.ELEMENTS.AUTO_REFRESH);
-      if (btn) btn.textContent = 'Stop Auto-Refresh';
+      this.updateButtonText('Stop Auto-Refresh');
     }
   },
 
   stop() {
-    if (state.autoRefreshInterval) {
+    if (state.isAutoRefreshActive()) {
       clearInterval(state.autoRefreshInterval);
       state.autoRefreshInterval = null;
-      const btn = getElement(CONFIG.ELEMENTS.AUTO_REFRESH);
-      if (btn) btn.textContent = 'Start Auto-Refresh';
+      this.updateButtonText('Start Auto-Refresh');
     }
   },
 
   toggle() {
-    state.autoRefreshInterval ? this.stop() : this.start();
+    state.isAutoRefreshActive() ? this.stop() : this.start();
+  },
+
+  updateButtonText(text) {
+    const btn = getElement(CONFIG.ELEMENTS.AUTO_REFRESH);
+    if (btn) btn.textContent = text;
   },
 };
 
+/**
+ * Fetches and displays the latest block
+ */
 window.fetchLatestBlock = async function fetchLatestBlock() {
   try {
+    state.setLoading(true);
     displayLoading(CONFIG.ELEMENTS.LATEST_BLOCK);
+
     const block = await getLatestBlock();
     const validatedBlock = validateBlockData(block, 'latest block');
     displayLatestBlock(validatedBlock);
@@ -118,18 +185,26 @@ window.fetchLatestBlock = async function fetchLatestBlock() {
       `Failed to fetch latest block: ${error.message}`,
       CONFIG.ELEMENTS.LATEST_BLOCK
     );
+  } finally {
+    state.setLoading(false);
   }
 };
 
+/**
+ * Loads and displays transactions for a specific block
+ * @param {string} blockHash - Block hash to load transactions for
+ */
 window.loadBlockTransactions = async function loadBlockTransactions(blockHash) {
   if (!blockHash) {
-    console.error('Block hash is required');
+    displayError('Block hash is required', CONFIG.ELEMENTS.BLOCK_LIST);
     return;
   }
 
   try {
+    state.setLoading(true);
     displayLoading(CONFIG.ELEMENTS.BLOCK_LIST);
     state.setCurrentBlock(blockHash);
+
     const txData = await getBlockTransactions(blockHash);
     const validatedData = validateTransactionData(txData);
     displayTransactions(validatedData);
@@ -139,21 +214,31 @@ window.loadBlockTransactions = async function loadBlockTransactions(blockHash) {
       `Failed to load transactions: ${error.message}`,
       CONFIG.ELEMENTS.BLOCK_LIST
     );
+  } finally {
+    state.setLoading(false);
   }
 };
 
+/**
+ * Clears block selection and resets view
+ */
 window.clearBlockSelection = function clearBlockSelection() {
   state.clearCurrentBlock();
   hideBlockContent();
   window.fetchLatestBlock();
 };
 
+/**
+ * Loads and displays block list with pagination
+ * @param {number} [page=1] - Page number to load
+ */
 window.loadBlockList = async function loadBlockList(page = 1) {
   try {
+    state.setLoading(true);
     displayLoading(CONFIG.ELEMENTS.BLOCK_LIST);
     hideBlockContent();
-    const blockData = await getBlocks(page);
 
+    const blockData = await getBlocks(page);
     if (!blockData?.blocks || !Array.isArray(blockData.blocks)) {
       throw new Error('Invalid block list data structure received');
     }
@@ -165,50 +250,67 @@ window.loadBlockList = async function loadBlockList(page = 1) {
       `Failed to load block list: ${error.message}`,
       CONFIG.ELEMENTS.BLOCK_LIST
     );
+  } finally {
+    state.setLoading(false);
   }
 };
 
+/**
+ * Navigates to block details page
+ * @param {string} blockHash - Block hash to view details for
+ */
 window.loadBlockDetails = function loadBlockDetails(blockHash) {
   if (!blockHash) {
-    console.error('Block hash is required');
+    displayError('Block hash is required', CONFIG.ELEMENTS.BLOCK_LIST);
     return;
   }
-  window.location.href = `pages/details.html?hash=${blockHash}&type=block`;
+  window.location.href = `${CONFIG.ROUTES.DETAILS}?hash=${blockHash}&type=block`;
 };
 
+/**
+ * Handles search functionality
+ * @param {string} query - Search query
+ */
 const handleSearch = async (query) => {
-  if (!query?.trim() || query.trim().length < CONFIG.MIN_SEARCH_LENGTH) {
-    alert(
-      `Please enter at least ${CONFIG.MIN_SEARCH_LENGTH} characters to search`
+  const trimmedQuery = query?.trim();
+  if (
+    !trimmedQuery ||
+    trimmedQuery.length < CONFIG.VALIDATION.MIN_SEARCH_LENGTH
+  ) {
+    displayError(
+      'Invalid search query',
+      `Please enter at least ${CONFIG.VALIDATION.MIN_SEARCH_LENGTH} characters to search`,
+      CONFIG.ELEMENTS.LATEST_BLOCK
     );
     return;
   }
 
   try {
+    state.setLoading(true);
     displayLoading(CONFIG.ELEMENTS.LATEST_BLOCK);
-    const searchResult = await search(query.trim());
 
-    if (!searchResult || !searchResult.type || !searchResult.result) {
+    const searchResult = await search(trimmedQuery);
+    if (!searchResult?.type || !searchResult?.result) {
       throw new Error('No results found');
     }
 
-    // Redirect to details page with appropriate parameters
-    if (searchResult.type === 'block') {
-      window.location.href = `pages/details.html?type=block&hash=${searchResult.result.hash}`;
-    } else if (searchResult.type === 'transaction') {
-      window.location.href = `pages/details.html?type=transaction&hash=${searchResult.result.hash}`;
-    } else {
-      throw new Error('Unsupported search result type');
-    }
+    const { type, result } = searchResult;
+    const redirectUrl = new URL(CONFIG.ROUTES.DETAILS, window.location.origin);
+    redirectUrl.searchParams.set('type', type);
+    redirectUrl.searchParams.set('hash', result.hash);
+
+    window.location.href = redirectUrl.toString();
   } catch (error) {
     console.error('Search error:', error);
-    displayError(
-      error.message || 'Search failed. Please try again.',
-      CONFIG.ELEMENTS.LATEST_BLOCK
-    );
+    displayError('Search failed', error.message, CONFIG.ELEMENTS.LATEST_BLOCK);
+  } finally {
+    state.setLoading(false);
   }
 };
 
+/**
+ * Sets up event listeners for the application
+ */
 const setupEventListeners = () => {
   const fetchBlockBtn = getElement(CONFIG.ELEMENTS.FETCH_BLOCK);
   fetchBlockBtn?.addEventListener('click', window.fetchLatestBlock);
@@ -224,25 +326,41 @@ const setupEventListeners = () => {
       handleSearch(searchInput.value)
     );
     searchInput.addEventListener('keypress', (event) => {
-      if (event.key === 'Enter') handleSearch(searchInput.value);
+      if (event.key === 'Enter') {
+        handleSearch(searchInput.value);
+      }
     });
   }
 };
 
+/**
+ * Initializes the application
+ */
 const initializeApp = async () => {
   try {
+    state.setLoading(true);
     hideBlockContent();
+
     await Promise.all([window.fetchLatestBlock(), window.loadBlockList()]);
+
     autoRefresh.start();
     setupEventListeners();
   } catch (error) {
     console.error('Error initializing application:', error);
-    displayError('Failed to initialize the application');
+    displayError(
+      'Failed to initialize the application',
+      error.message,
+      CONFIG.ELEMENTS.MAIN_CONTENT
+    );
+  } finally {
+    state.setLoading(false);
   }
 };
 
+// Initialize the application when the DOM is loaded
 document.addEventListener('DOMContentLoaded', initializeApp);
 
+// Export for testing and external use
 export {
   initializeApp,
   setupEventListeners,

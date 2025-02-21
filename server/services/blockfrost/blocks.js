@@ -1,3 +1,16 @@
+/**
+ * Block Service
+ *
+ * Handles all block-related Blockfrost interactions:
+ * - Latest block retrieval
+ * - Block history and pagination
+ * - Block details by hash/height
+ * - Block transaction details
+ * - Chain metrics and statistics
+ *
+ * @module services/blockfrost/blocks
+ */
+
 import { APIError } from '../../utils/APIError.js';
 import { fetchFromBlockfrost, calculateAmount } from './utils.js';
 
@@ -69,13 +82,14 @@ export const getBlockTransactions = async (hash) => {
 export const getBlocks = async (page = 1, limit = 10) => {
   const latestBlock = await getLatestBlock();
   const previousBlocks = await getPreviousBlocks(latestBlock.hash, limit);
+  const totalPages = Math.ceil(latestBlock.height / limit);
 
   return {
     blocks: [latestBlock, ...previousBlocks],
     pagination: {
       currentPage: page,
-      totalPages: Math.ceil(latestBlock.height / limit),
-      hasNext: page < Math.ceil(latestBlock.height / limit),
+      totalPages,
+      hasNext: page < totalPages,
       hasPrevious: page > 1,
       totalBlocks: latestBlock.height,
     },

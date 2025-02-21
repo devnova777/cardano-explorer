@@ -1,6 +1,6 @@
 /**
  * Transaction API Routes
- * Handles all transaction-related API endpoints
+ * @module routes/transactions
  */
 
 import express from 'express';
@@ -10,23 +10,20 @@ import { APIError } from '../utils/APIError.js';
 
 const router = express.Router();
 
-// Validate transaction hash
-const validateTxHash = (req, res, next) => {
-  const { hash } = req.params;
-  if (!hash || hash.length !== 64) {
-    throw new APIError('Invalid transaction hash', 400);
-  }
-  next();
-};
+const validateTxHash = (req, res, next) =>
+  !req.params.hash || req.params.hash.length !== 64
+    ? next(new APIError('Invalid transaction hash', 400))
+    : next();
 
 router.get(
   '/:hash',
   validateTxHash,
-  asyncHandler(async (req, res) => {
-    const { hash } = req.params;
-    const data = await getTransactionDetails(hash);
-    res.json({ success: true, data });
-  })
+  asyncHandler(async (req, res) =>
+    res.json({
+      success: true,
+      data: await getTransactionDetails(req.params.hash),
+    })
+  )
 );
 
 export default router;

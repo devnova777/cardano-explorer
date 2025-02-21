@@ -1,16 +1,12 @@
 /**
  * Address Details Renderer
  *
- * Responsible for rendering detailed information about a Cardano address including:
- * - Basic address information and balance
- * - Stake address (if delegated)
- * - UTXOs with associated assets
- * - Recent transactions
- *
- * Dependencies:
- * - getAddressDetails: Fetches address data from the API
- * - formatAda: Formats ADA amounts
- * - formatTimestamp: Formats block timestamps
+ * Manages the display of Cardano address information:
+ * - Address overview and balance
+ * - Stake delegation details
+ * - UTXO management
+ * - Transaction history
+ * - Asset holdings
  *
  * @module renderers/address
  */
@@ -42,15 +38,15 @@ const renderStakeAddress = (stakeAddress) => `
 const renderAssetsList = (assets) =>
   assets?.length
     ? `
-  <div class="assets">
-    <h5>Assets</h5>
-    <ul>
-      ${assets
-        .map((asset) => `<li>${asset.quantity} ${asset.unit}</li>`)
-        .join('')}
-    </ul>
-  </div>
-`
+    <div class="assets">
+      <h5>Assets</h5>
+      <ul>
+        ${assets
+          .map((asset) => `<li>${asset.quantity} ${asset.unit}</li>`)
+          .join('')}
+      </ul>
+    </div>
+  `
     : '';
 
 const renderUtxoSection = (utxos) => `
@@ -101,18 +97,14 @@ const renderTransactionSection = (transactions) => `
   </section>
 `;
 
-/**
- * Renders address details in the main content area
- * @param {string} address - The address to display
- */
-export async function renderAddressDetails(address) {
+export const renderAddressDetails = async (address) => {
   const mainContent = document.getElementById('main-content');
   mainContent.innerHTML =
     '<div class="loading">Loading address details...</div>';
 
   try {
     const details = await getAddressDetails(address);
-    const html = `
+    mainContent.innerHTML = `
       <div class="address-details">
         <h2>Address Details</h2>
         ${renderOverviewSection(address, details)}
@@ -120,7 +112,6 @@ export async function renderAddressDetails(address) {
         ${renderTransactionSection(details.transactions)}
       </div>
     `;
-    mainContent.innerHTML = html;
   } catch (error) {
     mainContent.innerHTML = `
       <div class="error">
@@ -129,4 +120,4 @@ export async function renderAddressDetails(address) {
       </div>
     `;
   }
-}
+};

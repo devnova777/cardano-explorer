@@ -1,6 +1,16 @@
-// shared.js
+/**
+ * Shared UI Components and Utilities
+ *
+ * This module provides common UI components and utilities used across the Cardano Explorer:
+ * - SVG icons for UI elements
+ * - Reusable UI components (detail rows, hash elements, error messages)
+ * - Loading state components
+ * - Formatting utilities (re-exported from utils.js)
+ *
+ * @module renderers/shared
+ */
 
-// First, let's define SVG_ICONS here since it's UI-specific
+// Constants
 export const SVG_ICONS = {
   copy: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -17,13 +27,13 @@ export const SVG_ICONS = {
   </svg>`,
 };
 
-// Import only what we need from utils.js
+// Import formatting utilities
 import { formatAda, formatDate } from '../utils.js';
 
 /**
  * Renders a detail row with label and value
  * @param {string} label - Label text
- * @param {string} value - Value text
+ * @param {string} value - Value text or HTML content
  * @returns {string} HTML string for detail row
  */
 export const renderDetailRow = (label, value) => `
@@ -34,26 +44,27 @@ export const renderDetailRow = (label, value) => `
 `;
 
 /**
- * Creates a hash element with label
+ * Creates a hash element with label and copy functionality
  * @param {string} hash - Hash value
  * @param {string} label - Label text
- * @returns {string} HTML string for hash element
+ * @returns {string} HTML string for hash element with copy button
  */
 export const createHashElement = (hash, label) => `
   <div class="hash-container">
     <span class="hash-label">${label}</span>
     <div class="hash-value" title="${hash}">${hash}</div>
+    <button class="copy-btn" data-hash="${hash}" title="Copy ${label}">${SVG_ICONS.copy}</button>
   </div>
 `;
 
 /**
- * Renders an error message
+ * Renders an error message with optional details and retry button
  * @param {string} message - The error message
- * @param {string} [details] - Optional error details
+ * @param {string} [details=''] - Optional error details
  * @returns {string} HTML string for error message
  */
 export const renderError = (message, details = '') => `
-  <div class="error-container">
+  <div class="error-container" role="alert">
     <div class="error-icon">⚠️</div>
     <div class="error-content">
       <h3 class="error-title">${message}</h3>
@@ -66,7 +77,7 @@ export const renderError = (message, details = '') => `
 `;
 
 /**
- * Renders a loading spinner with message
+ * Renders a loading spinner with customizable message
  * @param {string} [message='Loading...'] - Loading message to display
  * @returns {string} HTML string for loading state
  */
@@ -77,4 +88,5 @@ export const renderLoading = (message = 'Loading...') => `
   </div>
 `;
 
+// Re-export formatting utilities
 export { formatAda, formatDate };

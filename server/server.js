@@ -1,3 +1,16 @@
+/**
+ * Express Server Configuration
+ *
+ * Main server setup and configuration:
+ * - Security middleware (CORS, Helmet, Rate Limiting)
+ * - API routes and middleware
+ * - Static file serving
+ * - Environment-specific behavior
+ * - Error handling
+ *
+ * @module server
+ */
+
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -10,19 +23,15 @@ import blockRoutes from './routes/blocks.js';
 import transactionRoutes from './routes/transactions.js';
 import { validateApiConfig, errorHandler } from './middleware/errorHandler.js';
 
-// Load environment variables in development
+// Environment Configuration
 if (process.env.NODE_ENV !== 'production') dotenv.config();
 
-// Initialize express
 const app = express();
-
-// Setup paths for both local and Vercel
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = path.join(__dirname, '..');
 
-// Security configuration
-const securityConfig = {
+const SECURITY_CONFIG = {
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -35,70 +44,64 @@ const securityConfig = {
   },
 };
 
-// Rate limiting configuration
-const rateLimitConfig = {
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per window
+const RATE_LIMIT_CONFIG = {
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: { error: 'Too many requests, please try again later.' },
 };
 
-// Middleware setup
+const MIME_TYPES = {
+  js: 'application/javascript; charset=utf-8',
+  css: 'text/css; charset=utf-8',
+  html: 'text/html; charset=utf-8',
+};
+
+// Middleware Configuration
 app.use(cors());
 app.use(express.json());
-app.use(helmet(securityConfig));
-app.use(rateLimit(rateLimitConfig));
+app.use(helmet(SECURITY_CONFIG));
+app.use(rateLimit(RATE_LIMIT_CONFIG));
 
-// API routes (must come before static file serving)
+// API Routes
 app.use('/api', validateApiConfig);
 app.use('/api/blocks', blockRoutes);
 app.use('/api/tx', transactionRoutes);
 
-// Static file serving (only in development)
+// Development-only Static File Serving
 if (process.env.NODE_ENV !== 'production') {
-  // Serve static files with proper MIME types
+  const setMimeType = (res, filePath, mimeType) => {
+    if (filePath.endsWith(`.${mimeType}`)) {
+      res.setHeader('Content-Type', MIME_TYPES[mimeType]);
+    }
+  };
+
   app.use(
     '/js',
     express.static(path.join(rootDir, 'public/js'), {
-      setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.js')) {
-          res.setHeader(
-            'Content-Type',
-            'application/javascript; charset=utf-8'
-          );
-        }
-      },
+      setHeaders: (res, filePath) => setMimeType(res, filePath, 'js'),
     })
   );
 
   app.use(
     '/css',
     express.static(path.join(rootDir, 'public/css'), {
-      setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.css')) {
-          res.setHeader('Content-Type', 'text/css; charset=utf-8');
-        }
-      },
+      setHeaders: (res, filePath) => setMimeType(res, filePath, 'css'),
     })
   );
 
   app.use('/images', express.static(path.join(rootDir, 'public/images')));
 
-  // Serve HTML files
   app.use(
     express.static(rootDir, {
-      setHeaders: (res, filePath) => {
-        if (filePath.endsWith('.html')) {
-          res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        }
-      },
+      setHeaders: (res, filePath) => setMimeType(res, filePath, 'html'),
     })
   );
 }
 
-// Error handler must be last
+// Error Handling
 app.use(errorHandler);
 
-// Start server if in development
+// Development Server Start
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => {
@@ -108,5 +111,4 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
-// Export the Express API
 export default app;

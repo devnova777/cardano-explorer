@@ -1,3 +1,16 @@
+/**
+ * Blockfrost Utilities
+ *
+ * Core utilities for Blockfrost API interactions:
+ * - API configuration and key management
+ * - HTTP request handling
+ * - Response processing
+ * - Amount calculations
+ * - Error handling
+ *
+ * @module services/blockfrost/utils
+ */
+
 import fetch from 'node-fetch';
 import { APIError } from '../../utils/APIError.js';
 
@@ -20,9 +33,8 @@ export const fetchFromBlockfrost = async (endpoint, options = {}) => {
     const data = await response.json();
 
     if (!response.ok) {
-      if (response.status === 403) {
+      if (response.status === 403)
         throw new APIError('Invalid Blockfrost API key', 403);
-      }
       throw new APIError(
         data.message || 'Blockfrost API error',
         response.status
@@ -31,8 +43,9 @@ export const fetchFromBlockfrost = async (endpoint, options = {}) => {
 
     return data;
   } catch (error) {
-    if (error instanceof APIError) throw error;
-    throw new APIError(error.message, error.status || 500);
+    throw error instanceof APIError
+      ? error
+      : new APIError(error.message, error.status || 500);
   }
 };
 

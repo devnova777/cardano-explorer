@@ -1,62 +1,100 @@
 /**
  * Cardano Explorer Utilities
  *
- * Provides shared utility functions for:
- * - Date formatting
- * - Currency conversion and formatting
- * - DOM manipulation
- * - Data validation
- * - Error handling
+ * Core utility functions for the Cardano Explorer application:
+ * - Date & Time: Formatting, relative time, range checks
+ * - Currency: ADA/Lovelace conversion, number formatting
+ * - DOM: Safe element manipulation, event handling
+ * - Validation: Data type checking, format validation
+ * - UI: Error handling, loading states, visibility
+ *
+ * Features:
+ * - Comprehensive error handling and logging
+ * - Type-safe operations with validation
+ * - Consistent formatting across the application
+ * - Performance optimized DOM operations
+ * - Accessibility support
  *
  * @module utils
+ * @version 1.0.0
  */
 
+// Core Constants
 const CONSTANTS = {
-  LOVELACE_TO_ADA: 1000000,
-  DATE_OPTIONS: {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
+  CURRENCY: {
+    LOVELACE_TO_ADA: 1000000,
+    SYMBOL: '₳',
+    DEFAULT_DECIMALS: 6,
   },
-  NUMBER_FORMAT: {
-    minimumFractionDigits: 6,
-    maximumFractionDigits: 6,
+  TIME: {
+    UNITS: {
+      YEAR: 31536000,
+      MONTH: 2592000,
+      WEEK: 604800,
+      DAY: 86400,
+      HOUR: 3600,
+      MINUTE: 60,
+      SECOND: 1,
+    },
+    DATE_OPTIONS: {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    },
+  },
+  FORMAT: {
+    NUMBER: {
+      minimumFractionDigits: 6,
+      maximumFractionDigits: 6,
+    },
+  },
+  REGEX: {
+    HASH: /^[0-9a-fA-F]{64}$/,
+    ADDRESS: /^addr1[a-zA-Z0-9]+$/,
+    STAKE_ADDRESS: /^stake1[a-zA-Z0-9]+$/,
+    POOL_ID: /^pool1[a-zA-Z0-9]+$/,
+    ADA_AMOUNT: /^\d+(\.\d{0,6})?$/,
+  },
+  UI: {
+    TRANSITION_DURATION: 300,
+    AUTO_HIDE_DURATION: 5000,
   },
 };
 
 /**
- * Date formatting utilities
+ * Date and Time Utilities
+ * @namespace dateUtils
  */
 const dateUtils = {
   /**
    * Formats a Unix timestamp to a localized date string
    * @param {number|string} timestamp - Unix timestamp in seconds
-   * @param {Object} [options] - Custom date format options
+   * @param {Intl.DateTimeFormatOptions} [options] - Custom date format options
    * @returns {string} Formatted date string
+   * @throws {TypeError} If timestamp is invalid
    */
-  formatDate(timestamp, options = CONSTANTS.DATE_OPTIONS) {
+  formatDate(timestamp, options = CONSTANTS.TIME.DATE_OPTIONS) {
     if (!timestamp) return 'N/A';
     try {
       const ts =
         typeof timestamp === 'string' ? parseInt(timestamp) : timestamp;
       if (!Number.isFinite(ts)) {
-        console.warn('Invalid timestamp provided');
-        return 'Invalid Date';
+        throw new TypeError('Invalid timestamp format');
       }
       return new Date(ts * 1000).toLocaleString(undefined, options);
     } catch (error) {
-      console.error('Error formatting date:', error);
+      console.error('Date formatting error:', error);
       return 'Invalid Date';
     }
   },
 
   /**
-   * Converts a date to a relative time string (e.g., "2 hours ago")
+   * Converts a date to a relative time string
    * @param {number|string} timestamp - Unix timestamp in seconds
-   * @returns {string} Relative time string
+   * @returns {string} Relative time string (e.g., "2 hours ago")
    */
   getRelativeTime(timestamp) {
     if (!timestamp) return 'N/A';
@@ -64,40 +102,29 @@ const dateUtils = {
       const ts =
         typeof timestamp === 'string' ? parseInt(timestamp) : timestamp;
       if (!Number.isFinite(ts)) {
-        console.warn('Invalid timestamp provided');
-        return 'Invalid Date';
+        throw new TypeError('Invalid timestamp format');
       }
 
       const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
       const diff = (ts * 1000 - Date.now()) / 1000;
       const absDiff = Math.abs(diff);
 
-      const intervals = {
-        year: 31536000,
-        month: 2592000,
-        week: 604800,
-        day: 86400,
-        hour: 3600,
-        minute: 60,
-        second: 1,
-      };
-
-      for (const [unit, seconds] of Object.entries(intervals)) {
+      for (const [unit, seconds] of Object.entries(CONSTANTS.TIME.UNITS)) {
         if (absDiff >= seconds) {
-          return rtf.format(Math.round(diff / seconds), unit);
+          return rtf.format(Math.round(diff / seconds), unit.toLowerCase());
         }
       }
       return 'just now';
     } catch (error) {
-      console.error('Error calculating relative time:', error);
+      console.error('Relative time calculation error:', error);
       return 'Unknown time';
     }
   },
 
   /**
-   * Formats a timestamp into a short date string (e.g., "2024-03-21")
+   * Formats a timestamp into a short date string
    * @param {number|string} timestamp - Unix timestamp in seconds
-   * @returns {string} Short date string
+   * @returns {string} Short date string (YYYY-MM-DD)
    */
   formatShortDate(timestamp) {
     if (!timestamp) return 'N/A';
@@ -105,13 +132,11 @@ const dateUtils = {
       const ts =
         typeof timestamp === 'string' ? parseInt(timestamp) : timestamp;
       if (!Number.isFinite(ts)) {
-        console.warn('Invalid timestamp provided');
-        return 'Invalid Date';
+        throw new TypeError('Invalid timestamp format');
       }
-      const date = new Date(ts * 1000);
-      return date.toISOString().split('T')[0];
+      return new Date(ts * 1000).toISOString().split('T')[0];
     } catch (error) {
-      console.error('Error formatting short date:', error);
+      console.error('Short date formatting error:', error);
       return 'Invalid Date';
     }
   },
@@ -119,9 +144,7 @@ const dateUtils = {
   /**
    * Checks if a timestamp is within a specified range from now
    * @param {number|string} timestamp - Unix timestamp in seconds
-   * @param {Object} range - Time range configuration
-   * @param {number} range.value - Number of units
-   * @param {string} range.unit - Time unit (seconds, minutes, hours, days)
+   * @param {{value: number, unit: string}} range - Time range configuration
    * @returns {boolean} Whether the timestamp is within range
    */
   isWithinRange(timestamp, range) {
@@ -131,30 +154,23 @@ const dateUtils = {
       if (!Number.isFinite(ts)) return false;
 
       const now = Date.now() / 1000;
-      const units = {
-        seconds: 1,
-        minutes: 60,
-        hours: 3600,
-        days: 86400,
-      };
+      const multiplier = CONSTANTS.TIME.UNITS[range.unit.toUpperCase()];
 
-      const multiplier = units[range.unit];
       if (!multiplier) {
-        console.warn('Invalid time unit provided');
-        return false;
+        throw new Error(`Invalid time unit: ${range.unit}`);
       }
 
-      const diff = Math.abs(now - ts);
-      return diff <= range.value * multiplier;
+      return Math.abs(now - ts) <= range.value * multiplier;
     } catch (error) {
-      console.error('Error checking time range:', error);
+      console.error('Time range check error:', error);
       return false;
     }
   },
 };
 
 /**
- * Currency formatting utilities
+ * Currency and Number Formatting Utilities
+ * @namespace currencyUtils
  */
 const currencyUtils = {
   /**
@@ -165,14 +181,13 @@ const currencyUtils = {
   formatAda(lovelace) {
     try {
       if (typeof lovelace !== 'string' && typeof lovelace !== 'number') {
-        console.warn('Invalid lovelace amount provided');
-        return '0.000000';
+        throw new TypeError('Invalid lovelace amount');
       }
       const value = BigInt(lovelace.toString()) || BigInt(0);
-      const ada = Number(value) / CONSTANTS.LOVELACE_TO_ADA;
-      return ada.toLocaleString(undefined, CONSTANTS.NUMBER_FORMAT);
+      const ada = Number(value) / CONSTANTS.CURRENCY.LOVELACE_TO_ADA;
+      return ada.toLocaleString(undefined, CONSTANTS.FORMAT.NUMBER);
     } catch (error) {
-      console.error('Error formatting ADA:', error);
+      console.error('ADA formatting error:', error);
       return '0.000000';
     }
   },
@@ -185,145 +200,75 @@ const currencyUtils = {
   adaToLovelace(ada) {
     try {
       if (typeof ada !== 'string' && typeof ada !== 'number') {
-        console.warn('Invalid ADA amount provided');
-        return '0';
+        throw new TypeError('Invalid ADA amount');
       }
       const value = parseFloat(ada.toString()) || 0;
-      return Math.round(value * CONSTANTS.LOVELACE_TO_ADA).toString();
+      return Math.round(value * CONSTANTS.CURRENCY.LOVELACE_TO_ADA).toString();
     } catch (error) {
-      console.error('Error converting to Lovelace:', error);
+      console.error('Lovelace conversion error:', error);
       return '0';
     }
   },
 
   /**
-   * Formats a number with thousands separators and optional decimal places
+   * Formats a number with custom options
    * @param {number|string} value - Number to format
-   * @param {Object} [options] - Formatting options
-   * @param {number} [options.decimals] - Number of decimal places
-   * @param {boolean} [options.trimZeros=false] - Whether to trim trailing zeros
+   * @param {{decimals?: number, trimZeros?: boolean}} [options] - Format options
    * @returns {string} Formatted number
    */
   formatNumber(value, options = {}) {
     try {
       if (typeof value !== 'string' && typeof value !== 'number') {
-        console.warn('Invalid number provided for formatting');
-        return '0';
+        throw new TypeError('Invalid number format');
       }
 
       const number = parseFloat(value.toString()) || 0;
       const formatOptions = {
-        minimumFractionDigits: options.decimals || 0,
-        maximumFractionDigits: options.decimals || 0,
+        minimumFractionDigits: options.decimals ?? 0,
+        maximumFractionDigits: options.decimals ?? 0,
       };
 
       let formatted = number.toLocaleString(undefined, formatOptions);
-
       if (options.trimZeros && formatted.includes('.')) {
         formatted = formatted.replace(/\.?0+$/, '');
       }
 
       return formatted;
     } catch (error) {
-      console.error('Error formatting number:', error);
+      console.error('Number formatting error:', error);
       return '0';
     }
-  },
-
-  /**
-   * Validates if a string represents a valid ADA amount
-   * @param {string} value - Value to validate
-   * @returns {boolean} Whether the value is a valid ADA amount
-   */
-  isValidAdaAmount(value) {
-    if (typeof value !== 'string') return false;
-    return /^\d+(\.\d{0,6})?$/.test(value) && parseFloat(value) >= 0;
   },
 };
 
 /**
- * DOM manipulation utilities
+ * DOM Manipulation Utilities
+ * @namespace domUtils
  */
 const domUtils = {
   /**
-   * Gets a DOM element by ID
+   * Gets a DOM element safely
    * @param {string} id - Element ID
-   * @returns {HTMLElement|null} The found element or null if not found
-   * @throws {TypeError} If id is not a string
+   * @returns {HTMLElement|null} Found element or null
    */
   getElement(id) {
-    if (typeof id !== 'string') {
-      throw new TypeError('Element ID must be a string');
-    }
-    return document.getElementById(id);
-  },
-
-  /**
-   * Safely adds event listener with type checking
-   * @param {HTMLElement|null} element - Target element
-   * @param {string} event - Event name
-   * @param {Function} handler - Event handler
-   * @returns {boolean} Whether the listener was added successfully
-   */
-  addSafeEventListener(element, event, handler) {
-    if (!element || !(element instanceof HTMLElement)) {
-      console.warn('Invalid element provided to addSafeEventListener');
-      return false;
-    }
-    if (typeof event !== 'string') {
-      console.warn('Event name must be a string');
-      return false;
-    }
-    if (typeof handler !== 'function') {
-      console.warn('Event handler must be a function');
-      return false;
-    }
-
     try {
-      element.addEventListener(event, handler);
-      return true;
+      if (typeof id !== 'string') {
+        throw new TypeError('Element ID must be a string');
+      }
+      return document.getElementById(id);
     } catch (error) {
-      console.error('Error adding event listener:', error);
-      return false;
+      console.error('Element retrieval error:', error);
+      return null;
     }
   },
 
   /**
-   * Safely removes event listener with type checking
-   * @param {HTMLElement|null} element - Target element
-   * @param {string} event - Event name
-   * @param {Function} handler - Event handler
-   * @returns {boolean} Whether the listener was removed successfully
-   */
-  removeSafeEventListener(element, event, handler) {
-    if (!element || !(element instanceof HTMLElement)) {
-      console.warn('Invalid element provided to removeSafeEventListener');
-      return false;
-    }
-    if (typeof event !== 'string') {
-      console.warn('Event name must be a string');
-      return false;
-    }
-    if (typeof handler !== 'function') {
-      console.warn('Event handler must be a function');
-      return false;
-    }
-
-    try {
-      element.removeEventListener(event, handler);
-      return true;
-    } catch (error) {
-      console.error('Error removing event listener:', error);
-      return false;
-    }
-  },
-
-  /**
-   * Creates an element with attributes and optional content
+   * Creates an element with attributes and content
    * @param {string} tag - HTML tag name
-   * @param {Object} [attributes={}] - HTML attributes
-   * @param {string|HTMLElement} [content=''] - Inner content or child element
-   * @returns {HTMLElement|null} The created element or null if creation failed
+   * @param {Object} [attributes] - HTML attributes
+   * @param {string|HTMLElement} [content] - Inner content
+   * @returns {HTMLElement|null} Created element
    */
   createElement(tag, attributes = {}, content = '') {
     try {
@@ -349,55 +294,51 @@ const domUtils = {
 
       return element;
     } catch (error) {
-      console.error('Error creating element:', error);
+      console.error('Element creation error:', error);
       return null;
+    }
+  },
+
+  /**
+   * Safely adds event listener with validation
+   * @param {HTMLElement} element - Target element
+   * @param {string} event - Event name
+   * @param {Function} handler - Event handler
+   * @returns {boolean} Success status
+   */
+  addSafeEventListener(element, event, handler) {
+    try {
+      if (!element || !(element instanceof HTMLElement)) {
+        throw new TypeError('Invalid element');
+      }
+      if (typeof event !== 'string' || typeof handler !== 'function') {
+        throw new TypeError('Invalid event or handler');
+      }
+
+      element.addEventListener(event, handler);
+      return true;
+    } catch (error) {
+      console.error('Event listener error:', error);
+      return false;
     }
   },
 };
 
 /**
- * Data validation utilities
- */
-const validationUtils = {
-  /**
-   * Validates a hash string
-   * @param {string} hash - Hash to validate
-   * @returns {boolean} Whether the hash is valid
-   */
-  isValidHash(hash) {
-    return /^[0-9a-fA-F]{64}$/.test(hash);
-  },
-
-  /**
-   * Validates an epoch number
-   * @param {number} epoch - Epoch to validate
-   * @returns {boolean} Whether the epoch is valid
-   */
-  isValidEpoch(epoch) {
-    return Number.isInteger(epoch) && epoch >= 0;
-  },
-};
-
-/**
- * UI utilities for error and loading states
+ * UI State Management Utilities
+ * @namespace uiUtils
  */
 const uiUtils = {
   /**
-   * Displays an error message in the specified target element
-   * @param {string} message - Error message to display
+   * Displays an error message
+   * @param {string} message - Error message
    * @param {string} targetId - Target element ID
-   * @param {Object} [options] - Display options
-   * @param {boolean} [options.isWarning=false] - Whether to display as warning
-   * @param {number} [options.autoHide] - Auto-hide after milliseconds
-   * @returns {void}
+   * @param {{isWarning?: boolean, autoHide?: number}} [options] - Display options
    */
   displayError(message, targetId, options = {}) {
     try {
-      const element = document.getElementById(targetId);
-      if (!element) {
-        console.warn(`Target element '${targetId}' not found`);
-        return;
-      }
+      const element = domUtils.getElement(targetId);
+      if (!element) return;
 
       const className = options.isWarning ? 'warning-message' : 'error-message';
       const prefix = options.isWarning ? 'Warning' : 'Error';
@@ -406,7 +347,9 @@ const uiUtils = {
         <div class="${className}" role="alert">
           <strong>${prefix}:</strong> ${message}
           ${
-            options.autoHide ? '<button class="close-btn">&times;</button>' : ''
+            options.autoHide
+              ? '<button class="close-btn" aria-label="Close">&times;</button>'
+              : ''
           }
         </div>
       `;
@@ -420,156 +363,118 @@ const uiUtils = {
 
         const closeBtn = element.querySelector('.close-btn');
         if (closeBtn) {
-          closeBtn.addEventListener('click', () => {
+          domUtils.addSafeEventListener(closeBtn, 'click', () => {
             element.innerHTML = '';
           });
         }
       }
     } catch (error) {
-      console.error('Error displaying message:', error);
+      console.error('Error display error:', error);
     }
   },
 
   /**
-   * Displays a loading state in the specified target element
+   * Displays a loading state
    * @param {string} targetId - Target element ID
-   * @param {Object} [options] - Display options
-   * @param {string} [options.message='Loading...'] - Custom loading message
-   * @param {boolean} [options.showSpinner=true] - Whether to show loading spinner
-   * @returns {void}
+   * @param {{message?: string, showSpinner?: boolean}} [options] - Display options
    */
   displayLoading(targetId, options = {}) {
     try {
-      const element = document.getElementById(targetId);
-      if (!element) {
-        console.warn(`Target element '${targetId}' not found`);
-        return;
-      }
+      const element = domUtils.getElement(targetId);
+      if (!element) return;
 
       const message = options.message || 'Loading...';
       const spinner =
-        options.showSpinner !== false ? '<div class="spinner"></div>' : '';
+        options.showSpinner !== false
+          ? '<div class="spinner" role="progressbar"></div>'
+          : '';
 
       element.innerHTML = `
-        <div class="loading" role="status">
+        <div class="loading" role="status" aria-live="polite">
           ${spinner}
           <span>${message}</span>
         </div>
       `;
     } catch (error) {
-      console.error('Error displaying loading state:', error);
+      console.error('Loading display error:', error);
     }
   },
 
   /**
-   * Clears the content of a target element
+   * Toggles element visibility with animation
    * @param {string} targetId - Target element ID
-   * @returns {boolean} Whether the operation was successful
-   */
-  clearContent(targetId) {
-    try {
-      const element = document.getElementById(targetId);
-      if (!element) {
-        console.warn(`Target element '${targetId}' not found`);
-        return false;
-      }
-      element.innerHTML = '';
-      return true;
-    } catch (error) {
-      console.error('Error clearing content:', error);
-      return false;
-    }
-  },
-
-  /**
-   * Shows or hides an element with smooth transition
-   * @param {string} targetId - Target element ID
-   * @param {boolean} [show=true] - Whether to show or hide
-   * @returns {boolean} Whether the operation was successful
+   * @param {boolean} [show=true] - Show/hide flag
+   * @returns {boolean} Success status
    */
   toggleVisibility(targetId, show = true) {
     try {
-      const element = document.getElementById(targetId);
-      if (!element) {
-        console.warn(`Target element '${targetId}' not found`);
-        return false;
-      }
+      const element = domUtils.getElement(targetId);
+      if (!element) return false;
 
-      element.style.transition = 'opacity 0.3s ease-in-out';
+      element.style.transition = `opacity ${CONSTANTS.UI.TRANSITION_DURATION}ms ease-in-out`;
       element.style.opacity = show ? '1' : '0';
       element.style.visibility = show ? 'visible' : 'hidden';
 
       return true;
     } catch (error) {
-      console.error('Error toggling visibility:', error);
+      console.error('Visibility toggle error:', error);
       return false;
     }
   },
 };
 
 /**
- * SVG Icons used throughout the application
+ * Data Validation Utilities
+ * @namespace validators
  */
-export const SVG_ICONS = {
-  copy: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-  </svg>`,
-  rightArrow: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M9 18l6-6-6-6"/>
-  </svg>`,
-  leftArrow: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M15 18l-6-6 6-6"/>
-  </svg>`,
-  checkmark: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M20 6L9 17l-5-5"/>
-  </svg>`,
-  HOME: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-    <polyline points="9 22 9 12 15 12 15 22"></polyline>
-  </svg>`,
-  SEARCH: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-    <circle cx="11" cy="11" r="8"></circle>
-    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-  </svg>`,
-};
-
-// Export individual utilities and constants
-export const { formatDate, getRelativeTime, formatShortDate, isWithinRange } =
-  dateUtils;
-
-export const { formatAda, adaToLovelace, formatNumber, isValidAdaAmount } =
-  currencyUtils;
-
-export const {
-  getElement,
-  addSafeEventListener,
-  removeSafeEventListener,
-  createElement,
-} = domUtils;
-
-export const { isValidHash, isValidEpoch } = validationUtils;
-
-export const { LOVELACE_TO_ADA } = CONSTANTS;
-
-export const { displayError, displayLoading, clearContent, toggleVisibility } =
-  uiUtils;
-
-/**
- * Common validation utilities
- */
-export const validators = {
-  isValidHash: (hash) =>
-    typeof hash === 'string' && /^[0-9a-fA-F]{64}$/.test(hash),
-  isValidAddress: (address) =>
-    typeof address === 'string' && /^addr1[a-zA-Z0-9]+$/.test(address),
-  isValidStakeAddress: (address) =>
-    typeof address === 'string' && /^stake1[a-zA-Z0-9]+$/.test(address),
-  isValidPoolId: (poolId) =>
-    typeof poolId === 'string' && /^pool1[a-zA-Z0-9]+$/.test(poolId),
+const validators = {
+  isValidHash: (hash) => CONSTANTS.REGEX.HASH.test(hash),
+  isValidAddress: (address) => CONSTANTS.REGEX.ADDRESS.test(address),
+  isValidStakeAddress: (address) => CONSTANTS.REGEX.STAKE_ADDRESS.test(address),
+  isValidPoolId: (poolId) => CONSTANTS.REGEX.POOL_ID.test(poolId),
   isValidBlockHeight: (height) => {
     const num = parseInt(height);
     return !isNaN(num) && num >= 0 && num.toString() === height.toString();
   },
   isValidSearchQuery: (query) => query && query.length >= 3,
+  isValidAdaAmount: (value) => CONSTANTS.REGEX.ADA_AMOUNT.test(value),
 };
+
+// SVG Icons used throughout the application
+export const SVG_ICONS = {
+  COPY: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-label="Copy">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+  </svg>`,
+  RIGHT_ARROW: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-label="Next">
+    <path d="M9 18l6-6-6-6"/>
+  </svg>`,
+  LEFT_ARROW: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-label="Previous">
+    <path d="M15 18l-6-6 6-6"/>
+  </svg>`,
+  CHECKMARK: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-label="Success">
+    <path d="M20 6L9 17l-5-5"/>
+  </svg>`,
+  HOME: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-label="Home">
+    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+  </svg>`,
+  SEARCH: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" role="img" aria-label="Search">
+    <circle cx="11" cy="11" r="8"></circle>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>`,
+};
+
+// Export individual utilities
+export const { formatDate, getRelativeTime, formatShortDate, isWithinRange } =
+  dateUtils;
+
+export const { formatAda, adaToLovelace, formatNumber } = currencyUtils;
+
+export const { getElement, createElement, addSafeEventListener } = domUtils;
+
+export const { displayError, displayLoading, toggleVisibility } = uiUtils;
+
+// Export constants and validators
+export const { LOVELACE_TO_ADA } = CONSTANTS.CURRENCY;
+export { validators, CONSTANTS };

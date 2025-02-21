@@ -1,3 +1,16 @@
+/**
+ * Address Service
+ *
+ * Handles all address-related Blockfrost interactions:
+ * - Address UTXO retrieval
+ * - Address details and balances
+ * - Transaction history
+ * - Asset holdings
+ * - Stake address information
+ *
+ * @module services/blockfrost/addresses
+ */
+
 import { APIError } from '../../utils/APIError.js';
 import { fetchFromBlockfrost } from './utils.js';
 
@@ -9,19 +22,18 @@ export const getAddressUTXOs = async (address) => {
     return utxos
       .map((utxo) => {
         const lovelaceAmount = utxo.amount?.find((a) => a.unit === 'lovelace');
-        return lovelaceAmount
-          ? {
-              tx_hash: utxo.tx_hash,
-              output_index: utxo.output_index,
-              amount: lovelaceAmount.quantity,
-              assets: utxo.amount.filter((a) => a.unit !== 'lovelace'),
-            }
-          : null;
+        return (
+          lovelaceAmount && {
+            tx_hash: utxo.tx_hash,
+            output_index: utxo.output_index,
+            amount: lovelaceAmount.quantity,
+            assets: utxo.amount.filter((a) => a.unit !== 'lovelace'),
+          }
+        );
       })
       .filter(Boolean);
   } catch (error) {
-    if (error.status === 404) throw new APIError('Address not found', 404);
-    throw error;
+    throw error.status === 404 ? new APIError('Address not found', 404) : error;
   }
 };
 
@@ -61,7 +73,6 @@ export const getAddressDetails = async (address) => {
         .filter(Boolean),
     };
   } catch (error) {
-    if (error.status === 404) throw new APIError('Address not found', 404);
-    throw error;
+    throw error.status === 404 ? new APIError('Address not found', 404) : error;
   }
 };
