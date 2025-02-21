@@ -155,11 +155,29 @@ const displayBlockDetails = (block, transactions = null) => {
 
 /**
  * Displays error message in the UI
- * @param {string} message - Error message to display
+ * @param {string|Error} error - Error message or Error object to display
  */
-const displayError = (message) => {
+const displayError = (error) => {
   const detailsContent = getElement(UI.SELECTORS.DETAILS_CONTENT);
-  detailsContent.innerHTML = renderError(message);
+  let errorMessage = '';
+  let errorDetails = '';
+
+  if (error instanceof Error) {
+    errorMessage = error.message;
+    if (error.status === 404) {
+      errorDetails =
+        'The requested block or transaction could not be found. Please verify the hash and try again.';
+    } else if (error.status === 400) {
+      errorDetails =
+        'The request was invalid. Please check the provided hash or height.';
+    } else if (error.status === 500) {
+      errorDetails = 'A server error occurred. Please try again later.';
+    }
+  } else {
+    errorMessage = error;
+  }
+
+  detailsContent.innerHTML = renderError(errorMessage, errorDetails);
 };
 
 /**
@@ -172,12 +190,42 @@ const displayLoading = () => {
 
 const validateBlockData = (blockData) => {
   if (!blockData) {
-    throw new Error('No block data received');
+    console.error('No block data received');
+    throw new Error('No block data received from server');
   }
-  if (!blockData.hash || !blockData.height) {
-    console.error('Invalid block data structure:', blockData);
-    throw new Error('Invalid block data structure');
+
+  // Check for required fields
+  const requiredFields = ['hash', 'height', 'slot', 'time', 'epoch'];
+  const missingFields = requiredFields.filter((field) => !blockData[field]);
+
+  if (missingFields.length > 0) {
+    console.error('Invalid block data structure:', {
+      blockData,
+      missingFields,
+    });
+    throw new Error(
+      `Invalid block data: missing required fields (${missingFields.join(
+        ', '
+      )})`
+    );
   }
+
+  // Validate field types
+  if (
+    typeof blockData.height !== 'number' ||
+    typeof blockData.slot !== 'number' ||
+    typeof blockData.epoch !== 'number'
+  ) {
+    console.error('Invalid block data field types:', blockData);
+    throw new Error('Invalid block data: incorrect field types');
+  }
+
+  // Validate hash format
+  if (!/^[0-9a-fA-F]{64}$/.test(blockData.hash)) {
+    console.error('Invalid block hash format:', blockData.hash);
+    throw new Error('Invalid block data: incorrect hash format');
+  }
+
   return blockData;
 };
 

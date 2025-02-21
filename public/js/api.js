@@ -81,14 +81,33 @@ async function apiRequest(endpoint, options = {}) {
       },
     });
 
-    const data = await response.json();
+    // First check if the response is ok
+    if (!response.ok) {
+      const error = new Error(`HTTP error! status: ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
+
+    let data;
+    try {
+      data = await response.json();
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', parseError);
+      throw new Error('Invalid JSON response from server');
+    }
+
     console.log('API response:', { url, status: response.status, data });
 
-    if (!response.ok) {
+    // Validate response structure
+    if (!data) {
+      throw new Error('Empty response from server');
+    }
+
+    if (data.error) {
       const error = new Error(
-        data.error?.message ||
+        data.error.message ||
           data.message ||
-          ERROR_MESSAGES[data.error?.code] ||
+          ERROR_MESSAGES[data.error.code] ||
           ERROR_MESSAGES.default
       );
       error.status = response.status;
@@ -96,15 +115,22 @@ async function apiRequest(endpoint, options = {}) {
       throw error;
     }
 
-    if (!data.success) {
-      const error = new Error(data.error || 'API request failed');
-      error.status = response.status;
-      error.data = data;
-      throw error;
+    // Check for success flag and data presence
+    if (!data.success || !data.data) {
+      throw new Error('Invalid response format from server');
     }
 
     return data.data;
   } catch (error) {
+    console.error('API request failed:', {
+      endpoint,
+      error: {
+        message: error.message,
+        status: error.status,
+        data: error.data,
+        stack: error.stack,
+      },
+    });
     handleApiError(error, { endpoint, options });
   }
 }
