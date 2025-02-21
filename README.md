@@ -102,21 +102,43 @@ For detailed deployment information, see [TECHNICAL.md](/docs/TECHNICAL.md#deplo
 ```
 cardano-block-explorer/
 ├── server/
-│   ├── middleware/        # Error handling and validation
-│   ├── services/         # Blockfrost API integration
-│   │   └── blockfrost/  # Blockfrost service implementation
-│   ├── utils/           # Shared utilities
-│   └── server.js        # Express server
-├── js/
-│   ├── api.js           # API client
-│   ├── utils.js         # Client utilities
-│   ├── main.js          # Application entry
-│   └── renderers/       # UI components
-├── css/
-│   ├── modules/        # CSS modules
-│   └── styles.css      # Main styles
-├── pages/              # Static pages
-├── docs/              # Documentation
+│   ├── middleware/          # Error handling, validation, and async handlers
+│   │   ├── errorHandler.js  # Centralized error handling
+│   │   ├── asyncHandler.js  # Async operation wrapper
+│   │   └── validators.js    # Input validation
+│   ├── services/           # Business logic and external services
+│   │   └── blockfrost/    # Blockfrost API integration
+│   ├── utils/             # Server utilities
+│   │   ├── APIError.js    # Custom error handling
+│   │   └── validators.js  # Validation utilities
+│   └── server.js          # Express server setup
+├── public/                # Client-side assets
+│   ├── js/               # JavaScript modules
+│   │   ├── api.js        # API client
+│   │   ├── utils.js      # Client utilities
+│   │   ├── main.js       # Application entry
+│   │   ├── wallet.js     # Wallet functionality
+│   │   ├── ui.js         # UI controllers
+│   │   └── renderers/    # UI components
+│   │       ├── shared.js    # Shared components
+│   │       ├── search.js    # Search functionality
+│   │       └── transactions.js # Transaction views
+│   ├── css/              # Stylesheets
+│   │   ├── modules/     # CSS modules
+│   │   └── styles.css   # Main styles
+│   └── assets/          # Static assets
+│       ├── images/      # Image resources
+│       └── icons/       # Icon assets
+├── docs/                # Documentation
+│   ├── ARCHITECTURE.md  # System architecture
+│   ├── TECHNICAL.md    # Technical details
+│   ├── API.md          # API documentation
+│   └── SECURITY.md     # Security guidelines
+├── tests/              # Test suites
+│   ├── unit/          # Unit tests
+│   ├── integration/   # Integration tests
+│   └── e2e/          # End-to-end tests
+├── .env.example       # Environment template
 ├── vercel.json        # Vercel configuration
 └── index.html         # Entry point
 ```

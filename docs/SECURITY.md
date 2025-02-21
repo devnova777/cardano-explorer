@@ -85,102 +85,157 @@ app.use(
 
 ## Input Validation & Error Handling
 
-### Unified Error Class
+### Unified Error Configuration
 
 ```javascript
-export class APIError extends Error {
-  constructor(message, statusCode = 500, type = 'error') {
-    super(message);
-    this.statusCode = statusCode;
-    this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
-    this.type = type;
-    Error.captureStackTrace(this, this.constructor);
-  }
-
-  static get types() {
-    return {
-      VALIDATION: 'validation',
-      NOT_FOUND: 'not_found',
-      TIMEOUT: 'timeout',
-      UNAUTHORIZED: 'unauthorized',
-      FORBIDDEN: 'forbidden',
-    };
-  }
-}
+const CONFIG = {
+  ENVIRONMENTS: {
+    DEVELOPMENT: 'development',
+    PRODUCTION: 'production',
+    TEST: 'test',
+  },
+  STATUS_CODES: {
+    OK: 200,
+    BAD_REQUEST: 400,
+    UNAUTHORIZED: 401,
+    FORBIDDEN: 403,
+    NOT_FOUND: 404,
+    TIMEOUT: 408,
+    CONFLICT: 409,
+    INTERNAL_ERROR: 500,
+    SERVICE_UNAVAILABLE: 503,
+  },
+  ERROR_TYPES: {
+    VALIDATION: 'ValidationError',
+    API: 'APIError',
+    NETWORK: 'NetworkError',
+    DATABASE: 'DatabaseError',
+    AUTH: 'AuthenticationError',
+  },
+  TIMEOUTS: {
+    DEFAULT: 30000, // 30 seconds
+    API: 15000, // 15 seconds
+    DATABASE: 60000, // 60 seconds
+    MINIMUM: 1000, // 1 second minimum
+    MAXIMUM: 300000, // 5 minutes maximum
+  },
+};
 ```
 
-### Input Validation
+### Error Handling Implementation
 
 ```javascript
-// Hash validation
-if (!isValidHash(hash)) {
-  throw APIError.validation('Invalid block hash format');
-}
+const errorHandler = (err, req, res, next) => {
+  // Track error metrics
+  trackErrorMetrics(err, req);
 
-// ADA amount validation
-if (!isValidAdaAmount(amount)) {
-  throw APIError.validation('Invalid ADA amount');
-}
+  // Set security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.removeHeader('X-Powered-By');
 
-// Epoch validation
-if (!isValidEpoch(epoch)) {
-  throw APIError.validation('Invalid epoch number');
-}
+  const statusCode =
+    err.status ||
+    err.statusCode ||
+    (err.name === CONFIG.ERROR_TYPES.VALIDATION
+      ? CONFIG.STATUS_CODES.BAD_REQUEST
+      : CONFIG.STATUS_CODES.INTERNAL_ERROR);
+
+  // Format and send error response
+  res.status(statusCode).json(formatErrorResponse(err, req));
+};
+
+const formatErrorResponse = (error, req) => {
+  const isDevelopment =
+    process.env.NODE_ENV === CONFIG.ENVIRONMENTS.DEVELOPMENT;
+
+  return {
+    success: false,
+    status: error.status,
+    error: isDevelopment ? error.message : sanitizeErrorMessage(error.message),
+    ...(isDevelopment && {
+      path: req.path,
+      method: req.method,
+      stack: error.stack,
+      type: error.name,
+    }),
+  };
+};
 ```
 
 ### Error Sanitization
 
 ```javascript
-const sanitizeError = (error) => ({
-  message: error.message,
-  status: error.status,
-  type: error.type,
-  ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
-});
+const sanitizeErrorMessage = (message) => {
+  if (!message) return 'An error occurred';
+
+  // Remove sensitive information patterns
+  return message
+    .replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi, '[EMAIL]')
+    .replace(/\b\d{4}[-]?\d{4}[-]?\d{4}[-]?\d{4}\b/g, '[CARD]')
+    .replace(/([0-9a-fA-F]{32}|[0-9a-fA-F]{64})/g, '[HASH]');
+};
 ```
 
 ## Security Monitoring
 
-### Request Logging
+### Performance Monitoring
 
 ```javascript
-app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    logger.info('Request completed', {
-      method: req.method,
-      path: req.path,
-      status: res.statusCode,
-      duration,
-      ip: req.ip,
+const monitorPerformance = (path, method, duration) => {
+  if (duration > CONFIG.MONITORING.SLOW_THRESHOLD) {
+    console.warn('Slow request detected:', {
+      path,
+      method,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString(),
     });
-  });
-  next();
-});
+  }
+};
 ```
 
-### Security Event Logging
+### Error Metrics
 
 ```javascript
-const securityLogger = {
-  warn: (event, context = {}) => {
-    console.warn({
-      level: 'security_warning',
+const trackErrorMetrics = (error, req) => {
+  if (process.env.NODE_ENV === CONFIG.ENVIRONMENTS.PRODUCTION) {
+    console.warn('Error metrics:', {
+      path: req.path,
+      method: req.method,
+      errorType: error.name,
+      status: error.status || error.statusCode,
       timestamp: new Date().toISOString(),
-      event,
-      ...context,
     });
-  },
-  alert: (event, context = {}) => {
-    console.error({
-      level: 'security_alert',
-      timestamp: new Date().toISOString(),
-      event,
-      ...context,
-      environment: process.env.NODE_ENV,
+  }
+};
+```
+
+### Request Validation
+
+```javascript
+const validateApiConfig = (req, res, next) => {
+  try {
+    validateEnvironment();
+    next();
+  } catch (error) {
+    console.error('Configuration error:', error.message);
+    res.status(CONFIG.STATUS_CODES.SERVICE_UNAVAILABLE).json({
+      success: false,
+      error: 'Service configuration error',
+      status: CONFIG.STATUS_CODES.SERVICE_UNAVAILABLE,
     });
-  },
+  }
+};
+
+const validateEnvironment = () => {
+  const missingVars = CONFIG.REQUIRED_ENV_VARS.filter(
+    (varName) => !process.env[varName]
+  );
+
+  if (missingVars.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missingVars.join(', ')}`
+    );
+  }
 };
 ```
 

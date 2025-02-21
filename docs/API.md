@@ -286,31 +286,168 @@ Response:
 
 ## Error Handling
 
-All endpoints return errors in the following format:
+All endpoints return errors in a consistent format with environment-specific details:
 
-```json
+```javascript
+// Development Environment Response
 {
   "success": false,
-  "error": {
-    "message": "string",
-    "type": "string",
-    "status": "number"
-  }
+  "status": 400,
+  "error": "Invalid block hash format: abc123",
+  "path": "/api/blocks/abc123",
+  "stack": "ValidationError: Invalid block hash format...",
+  "type": "ValidationError"
+}
+
+// Production Environment Response
+{
+  "success": false,
+  "status": 400,
+  "error": "Invalid block hash format: [HASH]"
 }
 ```
 
 ### Error Types
 
-For detailed error handling implementation, see [SECURITY.md](/docs/SECURITY.md#error-handling).
+The API uses standardized error types for consistent error handling:
 
-Common status codes:
+```javascript
+const ERROR_TYPES = {
+  VALIDATION: 'ValidationError', // 400 Bad Request
+  API: 'APIError', // 500 Internal Server Error
+  NETWORK: 'NetworkError', // 503 Service Unavailable
+  DATABASE: 'DatabaseError', // 503 Service Unavailable
+  AUTH: 'AuthenticationError', // 401 Unauthorized
+};
+```
 
-- 400: Bad Request (invalid input)
-- 401: Unauthorized
-- 403: Forbidden
-- 404: Not Found
-- 429: Too Many Requests
-- 500: Internal Server Error
+### Status Codes
+
+```javascript
+const STATUS_CODES = {
+  OK: 200, // Successful request
+  BAD_REQUEST: 400, // Invalid input
+  UNAUTHORIZED: 401, // Missing or invalid authentication
+  FORBIDDEN: 403, // Valid auth but insufficient permissions
+  NOT_FOUND: 404, // Resource not found
+  TIMEOUT: 408, // Request timeout
+  CONFLICT: 409, // Resource conflict
+  INTERNAL_ERROR: 500, // Server error
+  SERVICE_UNAVAILABLE: 503, // Service temporarily unavailable
+};
+```
+
+### Error Responses by Type
+
+#### Validation Error
+
+```json
+{
+  "success": false,
+  "status": 400,
+  "error": "Invalid input: Block hash must be 64 characters"
+}
+```
+
+#### Authentication Error
+
+```json
+{
+  "success": false,
+  "status": 401,
+  "error": "API key is missing or invalid"
+}
+```
+
+#### Not Found Error
+
+```json
+{
+  "success": false,
+  "status": 404,
+  "error": "Block not found"
+}
+```
+
+#### Timeout Error
+
+```json
+{
+  "success": false,
+  "status": 408,
+  "error": "Request timed out"
+}
+```
+
+#### Server Error
+
+```json
+{
+  "success": false,
+  "status": 500,
+  "error": "Internal server error"
+}
+```
+
+## Rate Limiting
+
+The API implements rate limiting with the following configuration:
+
+```javascript
+const RATE_LIMIT_CONFIG = {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  standardHeaders: true, // Return rate limit info in headers
+  legacyHeaders: false, // Disable legacy X-RateLimit headers
+};
+```
+
+### Rate Limit Headers
+
+Responses include the following headers:
+
+- `RateLimit-Limit`: Maximum requests allowed per window
+- `RateLimit-Remaining`: Remaining requests in current window
+- `RateLimit-Reset`: Time in seconds until the rate limit resets
+
+### Rate Limit Exceeded Response
+
+```json
+{
+  "success": false,
+  "status": 429,
+  "error": "Too many requests, please try again later"
+}
+```
+
+## Performance Monitoring
+
+The API includes performance monitoring for request handling:
+
+### Slow Request Detection
+
+```javascript
+const MONITORING = {
+  SLOW_THRESHOLD: 5000, // 5 seconds
+};
+```
+
+Requests exceeding the threshold are logged with:
+
+- Request path and method
+- Duration in milliseconds
+- Timestamp
+- Additional context if available
+
+### Request Timeouts
+
+```javascript
+const TIMEOUTS = {
+  DEFAULT: 30000, // 30 seconds
+  API: 15000, // 15 seconds
+  DATABASE: 60000, // 60 seconds
+};
+```
 
 ## Client Utilities
 

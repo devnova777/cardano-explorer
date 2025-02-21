@@ -23,20 +23,89 @@ graph TB
 ```
 cardano-explorer/
 ├── server/
-│   ├── middleware/        # Error handling and validation
-│   ├── services/         # Blockfrost API integration
-│   ├── utils/           # Shared utilities
-│   └── server.js        # Express server
-├── js/
-│   ├── api.js           # API client
-│   ├── utils.js         # Client utilities
-│   ├── main.js          # Application entry
-│   └── renderers/       # UI components
-├── css/
-│   └── styles.css       # Main styles
-├── pages/              # Static pages
+│   ├── middleware/          # Request processing and error handling
+│   │   ├── errorHandler.js  # Centralized error handling
+│   │   ├── asyncHandler.js  # Async operation wrapper
+│   │   └── validators.js    # Input validation
+│   ├── services/           # Business logic and external services
+│   │   └── blockfrost/    # Blockfrost API integration
+│   ├── utils/             # Server utilities
+│   │   ├── APIError.js    # Custom error handling
+│   │   └── validators.js  # Validation utilities
+│   └── server.js          # Express server setup
+├── public/                # Client-side assets
+│   ├── js/               # JavaScript modules
+│   │   ├── api.js        # API client
+│   │   ├── utils.js      # Client utilities
+│   │   ├── main.js       # Application entry
+│   │   ├── wallet.js     # Wallet functionality
+│   │   ├── ui.js         # UI controllers
+│   │   └── renderers/    # UI components
+│   │       ├── shared.js    # Shared components
+│   │       ├── search.js    # Search functionality
+│   │       └── transactions.js # Transaction views
+│   ├── css/              # Stylesheets
+│   │   ├── modules/     # CSS modules
+│   │   └── styles.css   # Main styles
+│   └── assets/          # Static assets
+│       ├── images/      # Image resources
+│       └── icons/       # Icon assets
+├── tests/              # Test suites
+│   ├── unit/          # Unit tests
+│   ├── integration/   # Integration tests
+│   └── e2e/          # End-to-end tests
 └── docs/              # Documentation
 ```
+
+## Core Components
+
+### Middleware Layer
+
+The middleware layer provides robust request processing and error handling:
+
+1. **Error Handler (`errorHandler.js`)**
+
+   - Centralized error processing
+   - Environment-specific error responses
+   - Security-focused message sanitization
+   - Error metrics tracking
+   - Custom error type support
+
+2. **Async Handler (`asyncHandler.js`)**
+
+   - Promise rejection handling
+   - Request timeout management
+   - Performance monitoring
+   - Error context preservation
+   - Custom timeout configurations
+
+3. **Validators (`validators.js`)**
+   - Input validation
+   - Request sanitization
+   - Type checking
+   - Security validation
+
+### Client-Side Architecture
+
+The client-side code is organized into modular components:
+
+1. **Core Modules**
+
+   - API client for server communication
+   - Utility functions for common operations
+   - Main application controller
+
+2. **UI Components**
+
+   - Shared components for reusability
+   - Specialized renderers for different views
+   - Transaction and wallet management
+   - Search functionality
+
+3. **Asset Management**
+   - Organized static assets
+   - Modular CSS structure
+   - Icon and image resources
 
 ## Core Dependencies
 

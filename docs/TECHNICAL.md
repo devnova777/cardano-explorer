@@ -74,23 +74,104 @@ const getBlockDetails = async (hash) => {
 
 ### 4. Error Handling
 
+Our error handling system provides comprehensive error management with environment-specific responses and security features:
+
 ```javascript
-class APIError extends Error {
-  constructor(message, statusCode = 500, type = 'error') {
-    super(message);
-    this.statusCode = statusCode;
-    this.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
-    this.type = type;
-  }
+// Configuration Constants
+const CONFIG = {
+  ENVIRONMENTS: {
+    DEVELOPMENT: 'development',
+    PRODUCTION: 'production',
+    TEST: 'test',
+  },
+  STATUS_CODES: {
+    BAD_REQUEST: 400,
+    UNAUTHORIZED: 401,
+    NOT_FOUND: 404,
+    INTERNAL_ERROR: 500,
+  },
+  ERROR_TYPES: {
+    VALIDATION: 'ValidationError',
+    API: 'APIError',
+    NETWORK: 'NetworkError',
+    AUTH: 'AuthenticationError',
+  },
+};
 
-  static validation(message) {
-    return new APIError(message, 400, 'validation');
-  }
+// Error Handler Implementation
+const errorHandler = (err, req, res, next) => {
+  // Track error metrics
+  trackErrorMetrics(err, req);
 
-  static notFound(message) {
-    return new APIError(message, 404, 'not_found');
-  }
-}
+  // Set security headers
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.removeHeader('X-Powered-By');
+
+  const statusCode = err.status || CONFIG.STATUS_CODES.INTERNAL_ERROR;
+  const errorResponse = formatErrorResponse(err, req);
+
+  res.status(statusCode).json(errorResponse);
+};
+
+// Error Response Formatting
+const formatErrorResponse = (error, req) => {
+  const isDevelopment =
+    process.env.NODE_ENV === CONFIG.ENVIRONMENTS.DEVELOPMENT;
+
+  return {
+    success: false,
+    status: error.status,
+    error: isDevelopment ? error.message : sanitizeErrorMessage(error.message),
+    ...(isDevelopment && {
+      path: req.path,
+      method: req.method,
+      stack: error.stack,
+    }),
+  };
+};
+```
+
+### 5. Async Operation Handling
+
+Our async handler provides robust timeout management and performance monitoring:
+
+```javascript
+const CONFIG = {
+  TIMEOUTS: {
+    DEFAULT: 30000, // 30 seconds
+    API: 15000, // 15 seconds
+    DATABASE: 60000, // 60 seconds
+  },
+  MONITORING: {
+    SLOW_THRESHOLD: 5000, // Log requests taking longer than 5 seconds
+  },
+};
+
+const asyncHandler = (fn, options = {}) => {
+  const timeout = normalizeTimeout(options.timeout);
+
+  return async (req, res, next) => {
+    const startTime = Date.now();
+
+    try {
+      // Create timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => {
+          const error = new ErrorTypes.RequestTimeout();
+          reject(error);
+        }, timeout);
+      });
+
+      // Execute handler with timeout race
+      await Promise.race([Promise.resolve(fn(req, res, next)), timeoutPromise]);
+
+      // Monitor performance
+      monitorPerformance(req.path, req.method, Date.now() - startTime);
+    } catch (error) {
+      next(mapError(error, { path: req.path, method: req.method }));
+    }
+  };
+};
 ```
 
 ## API Implementation
@@ -206,41 +287,64 @@ describe('API Endpoints', () => {
 
 ### 1. Input Validation
 
+Enhanced validation with comprehensive type checking and sanitization:
+
 ```javascript
 const validators = {
-  isValidHash: (hash) =>
-    typeof hash === 'string' && /^[0-9a-fA-F]{64}$/.test(hash),
-  isValidAddress: (address) =>
-    typeof address === 'string' && /^addr1[a-zA-Z0-9]+$/.test(address),
+  isValidHash: (hash) => {
+    if (typeof hash !== 'string') return false;
+    return /^[0-9a-fA-F]{64}$/.test(hash);
+  },
+
+  isValidAddress: (address) => {
+    if (typeof address !== 'string') return false;
+    return /^addr1[a-zA-Z0-9]+$/.test(address);
+  },
+
   isValidBlockHeight: (height) => {
+    if (typeof height !== 'string' && typeof height !== 'number') return false;
     const num = parseInt(height);
-    return !isNaN(num) && num >= 0;
+    return !isNaN(num) && num >= 0 && num.toString() === height.toString();
+  },
+
+  isValidSearchQuery: (query) => {
+    if (!query || typeof query !== 'string') return false;
+    return query.length >= CONFIG.VALIDATION.MIN_SEARCH_LENGTH;
   },
 };
 ```
 
 ### 2. Error Sanitization
 
+Improved error message sanitization with sensitive data removal:
+
 ```javascript
-const sanitizeError = (error) => ({
-  message: error.message,
-  status: error.status,
-  type: error.type,
-  ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
-});
+const sanitizeErrorMessage = (message) => {
+  if (!message) return 'An error occurred';
+
+  // Remove sensitive information patterns
+  return message
+    .replace(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)/gi, '[EMAIL]')
+    .replace(/\b\d{4}[-]?\d{4}[-]?\d{4}[-]?\d{4}\b/g, '[CARD]')
+    .replace(/([0-9a-fA-F]{32}|[0-9a-fA-F]{64})/g, '[HASH]');
+};
 ```
 
-### 3. Rate Limiting
+### 3. Performance Monitoring
+
+Added performance monitoring for request handling:
 
 ```javascript
-const rateLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: {
-    status: 'error',
-    message: 'Too many requests',
-  },
-});
+const monitorPerformance = (path, method, duration) => {
+  if (duration > CONFIG.MONITORING.SLOW_THRESHOLD) {
+    console.warn('Slow request detected:', {
+      path,
+      method,
+      duration: `${duration}ms`,
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
 ```
 
 ## Performance Optimization
