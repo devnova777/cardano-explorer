@@ -206,12 +206,6 @@ James Barclay - jamesqbarclay@gmail.com
 
 ## 🗺️ Roadmap
 
-Current Status:
-
-- [x] Advanced transaction details
-- [x] Address tracking
-- [x] Search functionality
-
 Upcoming Features:
 
 - [ ] Asset information display
